@@ -1,0 +1,64 @@
+site_name: Abstract Dataloader
+repo_url: https://github.com/WiseLabCMU/abstract-dataloader
+repo_name: abstract-dataloader
+nav:
+  - Home: index.md
+  - Programming Model: model.md
+  - User Guide: guide.md
+  - Abstract Dataloader:
+    - Spec: spec.md
+    # - Abstract: abstract.md
+    # - Generic: generic.md
+    # - Torch: torch.md
+
+extra_css:
+  - stylesheets/extra.css
+
+theme:
+  name: material
+  icon:
+    logo: material/cube-outline
+  font:
+    code: monospace
+  features:
+    - navigation.instant
+    - navigation.expand
+  palette:
+    primary: red
+    accent: blue
+
+plugins:
+- search
+- autorefs
+- mkdocstrings:
+    default_handler: python_xref
+    handlers:
+      python_xref:
+        options:
+          docstring_style: google
+          show_root_members_full_path: true
+          relative_crossrefs: true
+          show_root_full_path: true
+          separate_signature: true
+          line_length: 80
+          show_signature_annotations: true
+          signature_crossrefs: true
+          show_symbol_type_heading: true
+        inventories:
+        - https://pytorch.org/docs/stable/objects.inv
+        - https://docs.python.org/3/objects.inv
+        - https://numpy.org/doc/stable/objects.inv
+
+markdown_extensions:
+  # Code blocks: https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  # Note / Warning / etc
+  # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
+  - admonition
+  - pymdownx.details

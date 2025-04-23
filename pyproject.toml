@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "abstract_dataloader"
+version = "0.2.0"
+authors = [
+  { name="Tianshu Huang", email="tianshu2@andrew.cmu.edu" },
+]
+description = "Abstract Dataloader: Dataloader Not Included."
+readme = "README.md"
+requires-python = ">=3.10"  # Ideally we require 3.11 or higher since many
+                            # typing-related features have been added, but we
+                            # stick to 3.10 since many potential downstreams
+                            # are pinned to 3.10. This should be revisited in
+                            # the future.
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+
+dependencies = [
+    "numpy >= 1.14",        # Only hard requirement is `np.integer` definition
+    "jaxtyping >= 0.2.32",  # Implements `TypeVar` as array type
+]
+
+[project.optional-dependencies]
+docs = [
+    # Most recent as of 16.04.2025; exact versions shouldn't matter unless the
+    # API is changed, so we pin here just in case.
+    "mkdocs == 1.6.*",
+    "mkdocs-material == 9.6.*",
+    "mkdocstrings-python-xref == 1.16.*",
+    "mkdocstrings[python] == 0.29.*"
+]
+torch = [
+    "torch >= 2.2"          # Pytorch 2.2 is the first version to add
+                            # `torch.utils._pytree.tree_leaves`, though
+                            # `tree_map` was present earlier. In any case,
+                            # Flash Attention v2 was added in `2.2` as well, so
+                            # no one should be using `<2.2`.
+]
