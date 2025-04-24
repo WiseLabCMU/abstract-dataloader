@@ -179,23 +179,22 @@ transform      collate      forward
     I can't think of any use cases for batch to sample transforms. We can
     add this to the spec if it turns out there is some use case for this.
 
-- Sample to sample ("transform"): apply some transform to a single
-  sample, returning another single sample. This represents most common
-  dataloader operations, e.g. data augmentations, point cloud
-  processing, etc.
-- Sample to batch ("collate"): combine multiple samples into a
-  "batch" which facilitates vectorized processing. This is analogous
-  to the `collate_fn` of a [pytorch
+- Sample to sample ([`SampleTransform`][abstract_dataloader.spec.SampleTransform],
+  [`Transforms.sample`][abstract_dataloader.spec.Transforms.sample]): apply
+  some transform to a single sample, returning another single sample. This
+  represents most common dataloader operations, e.g. data augmentations, point
+  cloud processing, etc.
+- Sample to batch ([`Collate`][abstract_dataloader.spec.Collate],
+  [`Transforms.collate`][abstract_dataloader.spec.Transforms.collate]): combine
+  multiple samples into a "batch" which facilitates vectorized processing. This
+  is analogous to the `collate_fn` of a [pytorch
   dataloader](https://pytorch.org/docs/stable/data.html), and may
   process the data in some way to facilitate batching (e.g.
   concatenating point clouds with length metadata similar to
   [pytorch3d](https://pytorch3d.readthedocs.io/en/latest/modules/ops.html)),
   or simply stack the inputs.
-- Batch to batch ("forward"): this step operates solely on batched
-  data; there is no sharp line where GPU preprocessing ends, and a GPU
-  model begins. As such, the name, `forward`, is a
-  deliberate choice to facilitate interoperability with
-  `torch.nn.Module`, for example if the transform requires
-  storing state which must be properly encapsulated and distributed.
-  This captures expensive,GPU-accelerated preprocessing steps steps such
-  as radar signal processing.
+- Batch to batch ([`BatchTransform`][abstract_dataloader.spec.BatchTransform],
+  [`Transforms.batch`][abstract_dataloader.spec.Transforms.batch]): this step
+  operates solely on batched data; there is no sharp line where GPU
+  preprocessing ends, and a GPU model begins. This captures expensive,
+  GPU-accelerated preprocessing steps.

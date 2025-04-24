@@ -69,22 +69,22 @@ import numpy as np
 from abstract_dataloader import spec, abstract
 
 @dataclass
-class RadarMetadata(abstract.Metadata):
+class LidarMetadata(abstract.Metadata):
     timestamps: Float64[np.ndarray, "N"]
     # ... other data fields ...
 
-class RadarData(TypedDict):
+class LidarData(TypedDict):
     # ... definition of data fields ...
 
-class Radar(abstract.Sensor[RadarData, RadarMetadata]):
+class Lidar(abstract.Sensor[LidarData, LidarMetadata]):
 
     def __init__(
-        self, metadata: RadarMetadata, path: str, name: str = "sensor"
+        self, metadata: LidarMetadata, path: str, name: str = "sensor"
     ) -> None:
         self.path = path
         super().__init__(metadata=metadata, name=name)
 
-    def __getitem__(self, batch: int | np.integer) -> RadarData:
+    def __getitem__(self, batch: int | np.integer) -> LidarData:
         blob_path = os.path.join(self.path, self.name, f"{batch:06}.npz")
         with open(blob_path) as f:
             npz: np.lib.npyio.NpzFile = np.load(f)

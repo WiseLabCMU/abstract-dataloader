@@ -35,6 +35,7 @@ docs = [
     "mkdocstrings[python] == 0.29.*"
 ]
 torch = [
+    "optree >= 0.13",       # Looks like optree wasn't really stable until 0.13.
     "torch >= 2.2"          # Pytorch 2.2 is the first version to add
                             # `torch.utils._pytree.tree_leaves`, though
                             # `tree_map` was present earlier. In any case,

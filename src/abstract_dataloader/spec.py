@@ -5,6 +5,18 @@ The implementations here provide "duck type"
 primitives. In order to implement the specification, users simply need to
 "fill in" the methods described here for the types which they wish to
 implement.
+
+!!! type-parameters "Type Parameters"
+
+    ADL specification protocol types are defined as
+    [generics](https://typing.python.org/en/latest/reference/generics.html),
+    which are parameterized by other types. These type parameters are
+    documented by a `Type Parameters` section where applicable.
+
+!!! composition-rules "Composition Rules"
+
+    ADL protocols which can be *composed* together are documented by a
+    `Composition Rules` section.
 """
 
 from typing import (
@@ -380,6 +392,10 @@ class Transforms(
     def batch(self, data: TCollated) -> TProcessed:
         """Transform data batch.
 
+        - Operates on a batch of data, nominally on the GPU-side of a
+          dataloader.
+        - This method is both sequentially and parallel composable.
+
         !!! info "Implementation as `torch.nn.Module`"
 
             If these `Transforms` require GPU state, it may be helpful to
@@ -387,10 +403,6 @@ class Transforms(
             should redirect to `__call__`, which in turn redirects to
             [`nn.Module.forward`][torch.] in order to handle any registered
             pytorch hooks.
-
-        - Operates on a batch of data, nominally on the GPU-side of a
-          dataloader.
-        - This method is both sequentially and parallel composable.
 
         Args:
             data: A `TCollated` batch of data, nominally already sent to the

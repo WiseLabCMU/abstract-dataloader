@@ -7,9 +7,9 @@ nav:
   - User Guide: guide.md
   - Abstract Dataloader:
     - Spec: spec.md
-    # - Abstract: abstract.md
-    # - Generic: generic.md
-    # - Torch: torch.md
+    - Abstract: abstract.md
+    - Generic: generic.md
+    - Torch: torch.md
 
 extra_css:
   - stylesheets/extra.css

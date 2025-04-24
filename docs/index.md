@@ -33,7 +33,9 @@ dependencies are required:
     To use the optional pytorch integrations, we also require either
     **`torch >= 2.2`** or **`torch` and
     [`optree`](https://github.com/metaopt/optree)** in order to have access to
-    a fully-featured tree manipulation module.
+    a fully-featured tree manipulation module. The included `torch` extra
+    will install the latest pytorch and optree, with constraints `torch >= 2.2`
+    and `optree >= 0.13`.
 
 
 ## Why Abstract?
