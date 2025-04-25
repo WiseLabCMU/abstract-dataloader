@@ -1,4 +1,16 @@
-# Dataloader Programming Model
+# Data Loading
+
+!!! abstract "TL;DR"
+
+    - A [`Dataset`][abstract_dataloader.spec.Dataset] consists of one or more
+      traces.
+    - A [`Trace`][abstract_dataloader.spec.Trace] consists of one or more
+      simultaneously recorded sensors, which are asynchronously recorded and
+      synchronized with a
+      [`Synchronization`][abstract_dataloader.spec.Synchronization] protocol.
+    - A [`Sensor`][abstract_dataloader.spec.Sensor] is a synchronous time
+      series of sensor data, with associated
+      [`Metadata`][abstract_dataloader.spec.Metadata].
 
 ## Dataset Hierarchy
 
@@ -8,8 +20,8 @@ Multimodal datasets generally operate using the following pattern:
   which can record data simultaneously.
 - The system has a way of starting a recording, which causes all of the
   sensors to record data, with some kind of metadata indicating which
-  session the data came from. This session is usually referred to as a
-  "trace."
+  session the data came from. This session is sometimes referred to as a
+  "trace" (also "sequence", "session", etc).
 - You offload the data from the collection system, and organize them
   into folders by trace. You then collect many such traces, and organize
   them into a "dataset."
@@ -144,57 +156,3 @@ memory advantages:
   require at least 4 bytes `int32` for each sample. In a
   more likely case, 10s of bytes would be required to store a file path,
   which can add up.
-
-## Transforms
-
-From a code portability standpoint, all transforms - functions which
-modify data in some way - can be broken down based on whether they
-support (and are optimized for) batched operation in the inputs and/or
-outputs.
-
-This implies that there are four possible types of transforms:
-single-sample to single-sample, single-sample to batch, batch to batch,
-and batch to single-sample. Three of these are commonly used in data
-pipelines, which we implement (and specify) in
-[`Transforms`][abstract_dataloader.spec.Transforms]:
-
-``` 
-transform      collate      forward
-┌──────┐      ┌──────┐    . ┌─────┐      ┌─────┐
-│Sample├─────►│Sample├──┐ . │     │      │     │
-└──────┘      └──────┘  │ . │     │      │     │
-┌──────┐      ┌──────┐  │ . │     │      │     │
-│Sample├─────►│Sample├──┤ . │     │      │     │
-└──────┘      └──────┘  ├──►│Batch├─────►│Batch│
-  ...           ...     │ . │     │      │     │
-                        │ . │     │      │     │
-┌──────┐      ┌──────┐  │ . │     │      │     │
-│Sample├─────►│Sample├──┘ . │     │      │     │
-└──────┘      └──────┘    . └─────┘      └─────┘
-                     CPU◄───►GPU
-```
-
-!!! question
-
-    I can't think of any use cases for batch to sample transforms. We can
-    add this to the spec if it turns out there is some use case for this.
-
-- Sample to sample ([`SampleTransform`][abstract_dataloader.spec.SampleTransform],
-  [`Transforms.sample`][abstract_dataloader.spec.Transforms.sample]): apply
-  some transform to a single sample, returning another single sample. This
-  represents most common dataloader operations, e.g. data augmentations, point
-  cloud processing, etc.
-- Sample to batch ([`Collate`][abstract_dataloader.spec.Collate],
-  [`Transforms.collate`][abstract_dataloader.spec.Transforms.collate]): combine
-  multiple samples into a "batch" which facilitates vectorized processing. This
-  is analogous to the `collate_fn` of a [pytorch
-  dataloader](https://pytorch.org/docs/stable/data.html), and may
-  process the data in some way to facilitate batching (e.g.
-  concatenating point clouds with length metadata similar to
-  [pytorch3d](https://pytorch3d.readthedocs.io/en/latest/modules/ops.html)),
-  or simply stack the inputs.
-- Batch to batch ([`BatchTransform`][abstract_dataloader.spec.BatchTransform],
-  [`Transforms.batch`][abstract_dataloader.spec.Transforms.batch]): this step
-  operates solely on batched data; there is no sharp line where GPU
-  preprocessing ends, and a GPU model begins. This captures expensive,
-  GPU-accelerated preprocessing steps.

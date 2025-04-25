@@ -3,7 +3,9 @@ repo_url: https://github.com/WiseLabCMU/abstract-dataloader
 repo_name: abstract-dataloader
 nav:
   - Home: index.md
-  - Programming Model: model.md
+  - Programming Model:
+    - Data Loading: dataloader.md
+    - Data Transforms: transforms.md
   - User Guide: guide.md
   - Abstract Dataloader:
     - Spec: spec.md

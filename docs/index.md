@@ -1,8 +1,104 @@
 # Abstract Dataloader: Dataloader Not Included
 
-The abstract
+## What is the Abstract Dataloader?
+
+The **abstract dataloader** (ADL) is a minimalist
+[specification][abstract_dataloader.spec] for creating composable and
+interoperable dataloaders and data transformations, along with
+[abstract template implementations][abstract_dataloader.abstract] and reusable
+[generic components][abstract_dataloader.generic], including a
+[pytorch interface][abstract_dataloader.torch].
+
+```
+Metadata─────────────────┐
+   │                     ▼
+   └────►Sensor   Synchronization
+           │             │
+           └────►Trace◄──┘
+                   │
+                   └────►Dataset───►Transform
+```
+
+The ADL's specifications and bundled implementations lean heavily on generic type
+annotations in order to enable type checking using static type checkers such as
+[mypy](https://mypy-lang.org/) or [pyright](https://microsoft.github.io/pyright/)
+and runtime (dynamic) type checkers such as [beartype](https://github.com/beartype/beartype)
+and [typeguard](https://github.com/agronholm/typeguard), even when applying
+functor-like generic transforms such as [sequence loading][abstract_dataloader.generic.Window]
+and [transforms][abstract_dataloader.generic.SequencePipeline].
+
+!!! tip "Structural Subtyping"
+
+    Since the abstract dataloader uses python's [structural
+    subtyping](https://typing.python.org/en/latest/spec/protocol.html) -
+    `Protocol` - feature, the `abstract_dataloader` is not a required dependency
+    for using the abstract dataloader! Implementations which follow the
+    specifications are fully interoperable, including with type checkers,
+    even if they do not have any mutual dependencies - including this library.
+
+!!! info "Optional Type Checking"
+
+    While most of the non-documentation code in this library goes towards
+    facilitating type checking of the abstract dataloader specifications,
+    static and runtime type checking are fully optional, in line with Python's
+    gradual typing paradigm.
+
+    Users also do not need to fully define the abstract dataloader's typed
+    interfaces. For example, specifying a [`Sensor`][abstract_dataloader.spec]
+    instead of a `Sensor[TData, TMetadata]` is perfectly valid, as type
+    type checkers will simply interpret the sensor as loading `Any` data and
+    accepting `Any` metadata.
+
+## Why Abstract?
+
+Loading, preprocessing, and training models on time-series data is ubiquitous
+in machine learning for cyber-physical systems. However, unlike mainstream
+machine learning research, which has largely standardized around "canonical
+modalities" in computer vision (RGB images) and natural language processing
+(ordinary unstructured text), each new setting, dataset, and modality
+comes with a new set of tasks, questions, challenges - and data types
+which must be loaded and processed.
+
+This poses a substantial software engineering challenge. With many
+different modalities, processing algorithms which operate on the
+power set of those different modalities, and downstream tasks which also
+each depend on some subset of modalities, two undesirable potential outcomes
+emerge:
+
+1.  Data loading and processing components fragment into an exponential
+    number of incompatible chunks, each of which encapsulates its
+    required loading and processing functionality in a slightly
+    different way. The barrier this presents to rapid prototyping needs
+    no further explanation.
+2.  The various software components coalesce into a monolith which
+    nominally supports the power set of all functionality. However, in
+    addition to the compatibility issues that come with bundling
+    heterogeneous requirements such as managing "non-dependencies"
+    (i.e. dependencies which are required by the monolith, but not a
+    particular task), this also presents a hidden challenge in that by
+    support exponentially many possible configurations, such an
+    architecture is also exponentially hard to debug and verify.
+
+However, we do not believe that these outcomes are a foregone
+conclusion. In particular, we believe that it's possible to write "one
+true dataloader" which can scale while maintaining intercompability by
+**not writing a dataloader at all** -- but rather a common
+specification for writing dataloaders. We call this the
+**"abstract dataloader"**.
 
 ## Setup
+
+While it is not necessary to install the `abstract_dataloader` in order to take
+advantage of ADL-compliant components, installing this library provides access
+to [`Protocol`][typing.Protocol] types which describe each interface, as well
+as [generic][abstract_dataloader.generic] components which may be useful for
+working with ADL-compliant components.
+
+The `abstract_dataloader` is currently distributed using github:
+
+```sh
+pip install git+git@github.com:WiseLabCMU/abstract-dataloader.git
+```
 
 ## Dependencies
 
@@ -36,94 +132,3 @@ dependencies are required:
     a fully-featured tree manipulation module. The included `torch` extra
     will install the latest pytorch and optree, with constraints `torch >= 2.2`
     and `optree >= 0.13`.
-
-
-## Why Abstract?
-
-Loading, preprocessing, and training models on time-series data is a
-ubiquitous primitive in applied machine learning for cyber-physical
-systems. However, unlike mainstream machine learning research, which has
-largely standardized around "canonical problems" in computer vision
-(operating on RGB images) and natural language processing (operating on
-ordinary unstructured text), each new setting, dataset, and modality
-comes with a new set of tasks, questions, challenges -- and data types
-which must be loaded and processed.
-
-This poses a substantial software engineering challenge. With many
-different modalities, processing algorithms which various operate on the
-power set of those different modalities, and downstream tasks which also
-each depend on some subset, two undesirable potential outcomes emerge:
-
-1.  Data loading and processing components fragment into an exponential
-    number of incompatible chunks, each of which encapsulates its
-    required loading and processing functionality in a slightly
-    different way. The barrier this presents to rapid prototyping needs
-    no further explanation.
-2.  The various software components coalesce into a monolith which
-    nominally supports the power set of all functionality. However, in
-    addition to the compatibility issues that come with bundling
-    heterogeneous requirements such as managing "non-dependencies"
-    (i.e. dependencies which are required by the monolith, but not a
-    particular task), this also presents a hidden challenge in that by
-    support exponentially many possible configurations, such an
-    architecture is also exponentially hard to debug and verify.
-
-Fortunately, we do not believe that these outcomes are a foregone
-conclusion. In particular, we believe that it's possible to write "one
-true dataloader" which can scale while maintaining intercompability by
-**not writing a dataloader at all** -- but rather a common
-specification for writing dataloaders: an **"abstract dataloader"**.
-
-## What is the Abstract Dataloader?
-
-This library describes an "abstract dataloader" specification, and
-should be conceptualized as three major logical components:
-
-1.  A [multimodal, asynchronous time-series dataloader programming model](model.md)
-    which organizes datasets into a collection of traces, traces into a
-    (possibly asynchronous) collection of sensors, and defines sensors as
-    synchronous discrete-time time-series measurements.
-
-    ``` 
-    ┌─────────────────────────────────────────────────────────────┐
-    │Dataset                                                      │
-    │┌─────────────────────────┐┌─────────────────────────┐       │
-    ││Trace 1                  ││Trace 2                  │       │
-    ││┌────────┐┌────────┐     ││┌────────┐┌────────┐     │       │
-    │││Sensor 1││Sensor 2│ ... │││Sensor 1││Sensor 2│ ... │  ...  │
-    ││└────────┘└────────┘     ││└────────┘└────────┘     │       │
-    │└─────────────────────────┘└─────────────────────────┘       │
-    └─────────────────────────────────────────────────────────────┘
-    ```
-
-2.  A [formal, modular, and composable specification][abstract_dataloader.spec]
-    (or at least as formal as we could get it, given the constraints of
-    Python's type system) of the interfaces required to implement each building
-    block in a dataloader with our programming model.
-
-    ``` 
-    Metadata─────────────────┐
-       │                     ▼
-       └────►Sensor   Synchronization
-               │             │
-               └────►Trace◄──┘
-                       │
-                       └────►Dataset───►Transforms
-    ```
-
-3.  A ["starter kit" of `abstract`][abstract_dataloader.abstract]
-    and [`generic`][abstract_dataloader.generic]
-    implementations of applicable parts of the spec, all with minimal
-    dependency constraints -- only a version of numpy from 2018 or
-    newer and a recent version of jaxtyping.
-
-Each component is implemented to be as generic and extendable as
-possible, with the goal of eventually writing a complete specification
-which can encapsulate all re-usable and interoperable dataloader
-interactions. Notably, by using python's [structural
-subtyping](https://typing.python.org/en/latest/spec/protocol.html)
-functionality, the `abstract_dataloader` is not a required
-dependency for using the abstract dataloader: implementations which
-implement the specifications as described are fully interoperable, even
-if they do not have any mutual dependencies, including the
-`abstract_dataloader`.

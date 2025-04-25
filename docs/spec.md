@@ -10,7 +10,6 @@
         - Synchronization
         - Trace
         - Dataset
-        - SampleTransform
+        - Transform
         - Collate
-        - BatchTransform
-        - Transforms
+        - Pipeline

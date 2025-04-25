@@ -160,14 +160,14 @@ TCollated = TypeVar("TCollated")
 TProcessed = TypeVar("TProcessed", covariant=True)
 
 
-class SequenceTransforms(
-    spec.Transforms[
+class SequencePipeline(
+    spec.Pipeline[
         Sequence[TRaw], Sequence[TTransformed],
         Sequence[TCollated], Sequence[TProcessed]],
 ):
     """Transform which passes an additional sequence axis through.
 
-    The given `Transform` is modified to accept `Sequence[...]` for each
+    The given `Pipeline` is modified to accept `Sequence[...]` for each
     data type in its pipeline, and return a `list[...]` across the additional
     axis, thus "passing through" the axis.
 
@@ -195,27 +195,27 @@ class SequenceTransforms(
     ]
     ```
 
-    Args:
-        transform: input transform.
-
     Type Parameters:
         - `TRaw`, `TTransformed`, `TCollated`, `TProcessed`: see
-          [`Transforms`][abstract_dataloader.spec.].
+          [`Pipeline`][abstract_dataloader.spec.].
+
+    Args:
+        transform: input transform.
     """
 
     def __init__(
-        self, transforms: spec.Transforms[
+        self, transform: spec.Pipeline[
             TRaw, TTransformed, TCollated, TProcessed]
     ) -> None:
-        self.transforms = transforms
+        self.transform = transform
 
     def sample(self, data: Sequence[TRaw]) -> list[TTransformed]:
-        return [self.transforms.sample(x) for x in data]
+        return [self.transform.sample(x) for x in data]
 
     def collate(
         self, data: Sequence[Sequence[TTransformed]]
     ) -> list[TCollated]:
-        return [self.transforms.collate(x) for x in zip(*data)]
+        return [self.transform.collate(x) for x in zip(*data)]
 
     def batch(self, data: Sequence[TCollated]) -> list[TProcessed]:
-        return [self.transforms.batch(x) for x in data]
+        return [self.transform.batch(x) for x in data]

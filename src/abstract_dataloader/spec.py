@@ -33,8 +33,8 @@ import numpy as np
 from jaxtyping import Float, Integer
 
 __all__ = [
-    "Dataset", "Metadata", "Sensor", "Synchronization", "Trace", "Transforms",
-    "SampleTransform", "Collate", "BatchTransform"
+    "Dataset", "Metadata", "Sensor", "Synchronization", "Trace", "Pipeline",
+    "Transform", "Collate"
 ]
 
 
@@ -231,8 +231,8 @@ TProcessed = TypeVar("TProcessed", infer_variance=True)
 
 
 @runtime_checkable
-class SampleTransform(Protocol, Generic[TRaw, TTransformed]):
-    """Sample-wise transform.
+class Transform(Protocol, Generic[TRaw, TTransformed]):
+    """Sample or batch-wise transform.
 
     !!! note
 
@@ -240,11 +240,12 @@ class SampleTransform(Protocol, Generic[TRaw, TTransformed]):
         `Callable[[TRaw], TTransformed]` or `Callable[[Any], Any]`.
 
     Composition Rules:
-        - `SampleTransform` can be freely composed, as long as each transform's
-          `TTransformed` matches the next transform's `TRaw`.
-        - Composed `SampleTransform`s result in another `SampleTransform`:
+        - `Transform` can be freely composed, as long as each transform's
+          `TTransformed` matches the next transform's `TRaw`; this composition
+          is implemented by [`abstract.Transform`][abstract_dataloader.].
+        - Composed `Transform`s result in another `Transform`:
           ```
-          `SampleTransform[T2, T3] (.) SampleTransform[T1, T2]`) = SampleTransform[T1, T3]`.
+          Transform[T2, T3] (.) Transform[T1, T2] = Transform[T1, T3].
           ```
 
     Type Parameters:
@@ -271,7 +272,9 @@ class Collate(Protocol, Generic[TTransformed, TCollated]):
     !!! note
 
         This protocol is a equivalent to
-        `Callable[[Sequence[TTransformed]], TCollated]`.
+        `Callable[[Sequence[TTransformed]], TCollated]`. `Collate` can also
+        be viewed as a special case of `Transform`, where the input type
+        `TRaw` must be a `Sequence[...]`.
 
     Composition Rules:
         - `Collate` can only be composed in parallel, and can never be
@@ -295,38 +298,7 @@ class Collate(Protocol, Generic[TTransformed, TCollated]):
 
 
 @runtime_checkable
-class BatchTransform(Protocol, Generic[TCollated, TProcessed]):
-    """Batch data transform.
-
-    !!! note
-
-        This protocol is a equivalent to `Callable[TCollated], TProcessed]`.
-
-    Composition Rules:
-        - `BatchTransform` can be freely composed, as long as each transform's
-          `TTransformed` matches the next transform's `TRaw`.
-        - Composed `BatchTransform`s result in another `BatchTransform`:
-          `BatchTransform[T2, T3] (.) BatchTransform[T1, T2]`) = BatchTransform[T1, T3]`.
-
-    Type Parameters:
-        - `TTransformed`: Input data type.
-        - `TCollated`: Output data type.
-    """
-
-    def __call__(self, data: Sequence[TTransformed]) -> TCollated:
-        """Collate a set of samples.
-
-        Args:
-            data: A set of `TTransformed` samples.
-
-        Returns:
-            A `TCollated` batch.
-        """
-        ...
-
-
-@runtime_checkable
-class Transforms(
+class Pipeline(
     Protocol, Generic[TRaw, TTransformed, TCollated, TProcessed]
 ):
     """Dataloader transform pipeline.
@@ -337,17 +309,20 @@ class Transforms(
     transforms:
 
     - [`sample`][.]: a sample to sample transform; can be sequentially
-      assembled from one or more [`SampleTransform`][^.]s.
+      assembled from one or more [`Transform`][^.]s.
     - [`collate`][.]: a list-of-samples to batch transform. Can use exactly one
       [`Collate`][^.].
     - [`batch`][.]: a batch to batch transform; can be sequentially assembled
-      from one or more [`BatchTransform`][^.]s.
+      from one or more [`Transform`][^.]s.
 
     Composition Rules:
-        - A full set of `Transforms` can be sequentially pre-composed with one
-          or more [`SampleTransform`][^.]s or post-composed with one or more
-          [`BatchTransform`][^.]s.
-        - `Transforms` can always be composed in parallel.
+        - A full `Pipeline` can be sequentially pre-composed and/or
+          post-composed with one or more [`Transform`][^.]s; this is
+          implemented by [`generic.ComposedPipeline`][abstract_dataloader.].
+        - `Pipeline`s can always be composed in parallel; this is implemented
+          by [`generic.ParallelPipelines`][abstract_dataloader.], with a
+          pytorch [`nn.Module`][torch.]-compatible version in
+          [`torch.ParallelPipelines`][abstract_dataloader.].
 
     Type Parameters:
         - `TRaw`: Input data format.

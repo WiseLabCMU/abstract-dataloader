@@ -1,19 +1,17 @@
 """Transform compositions."""
 
-from typing import Any, Sequence, TypeVar, cast
+from typing import Any, Generic, Sequence, TypeVar, cast
 
 from abstract_dataloader import spec
 
-ComposedRaw = TypeVar("ComposedRaw", bound=dict[str, Any])
-ComposedTransformed = TypeVar("ComposedTransformed", bound=dict[str, Any])
-ComposedCollated = TypeVar("ComposedCollated", bound=dict[str, Any])
-ComposedProcessed = TypeVar("ComposedProcessed", bound=dict[str, Any])
+PRaw = TypeVar("PRaw", bound=dict[str, Any])
+PTransformed = TypeVar("PTransformed", bound=dict[str, Any])
+PCollated = TypeVar("PCollated", bound=dict[str, Any])
+PProcessed = TypeVar("PProcessed", bound=dict[str, Any])
 
 
-class ComposeTransforms(
-    spec.Transforms[
-        ComposedRaw, ComposedTransformed,
-        ComposedCollated, ComposedProcessed],
+class ParallelPipelines(
+    spec.Pipeline[PRaw, PTransformed, PCollated, PProcessed],
 ):
     """Compose multiple transforms in parallel.
 
@@ -34,30 +32,112 @@ class ComposeTransforms(
         class is parameterized by a separate set of
         `Composed(Raw|Transformed|Collated|Processed)` types with this bound.
 
+    !!! tip
+
+        See [`torch.ParallelPipelines`][abstract_dataloader.] for an
+        implementation which is compatible with [`nn.Module`][torch.]-based
+        pipelines.
+
+    Type Parameters:
+        - `PRaw`, `PTransformed`, `PCollated`, `PProcessed`: see
+          [`Pipeline`][abstract_dataloader.spec.].
+
     Args:
         transforms: transforms to compose. The key indicates the subkey to
             apply each transform to.
-
-    Type Parameters:
-        - `ComposedRaw`, `ComposedTransformed`, `ComposedCollated`,
-          `ComposedProcessed`: see [`Transforms`][abstract_dataloader.spec.].
     """
 
-    def __init__(self, **transforms: spec.Transforms) -> None:
+    def __init__(self, **transforms: spec.Pipeline) -> None:
         self.transforms = transforms
 
-    def sample(self, data: ComposedRaw) -> ComposedTransformed:
+    def sample(self, data: PRaw) -> PTransformed:
         return cast(
-            ComposedTransformed,
+            PTransformed,
             {k: v.sample(data[k]) for k, v in self.transforms.items()})
 
-    def collate(self, data: Sequence[ComposedTransformed]) -> ComposedCollated:
-        return cast(ComposedCollated, {
+    def collate(self, data: Sequence[PTransformed]) -> PCollated:
+        return cast(PCollated, {
             k: v.collate([x[k] for x in data])
             for k, v in self.transforms.items()
         })
 
-    def batch(self, data: ComposedCollated) -> ComposedProcessed:
+    def batch(self, data: PCollated) -> PProcessed:
         return cast(
-            ComposedProcessed,
+            PProcessed,
             {k: v.batch(data[k]) for k, v in self.transforms.items()})
+
+
+TRawInner = TypeVar("TRawInner", infer_variance=True)
+TRaw = TypeVar("TRaw", infer_variance=True)
+TTransformed = TypeVar("TTransformed", infer_variance=True)
+TCollated = TypeVar("TCollated", infer_variance=True)
+TProcessed = TypeVar("TProcessed", infer_variance=True)
+TProcessedInner = TypeVar("TProcessedInner", infer_variance=True)
+
+
+class ComposedPipeline(
+    spec.Pipeline[TRaw, TTransformed, TCollated, TProcessed],
+    Generic[
+        TRaw, TRawInner, TTransformed,
+        TCollated, TProcessedInner, TProcessed]
+):
+    """Compose transforms sequentially with pre and post transforms.
+
+    Type Parameters:
+        `TRaw`: initial input type.
+        `TRawInner`: output of the pre-composed transform, and input to the
+            provided [`Pipeline`][abstract_dataloader.spec].
+        `TCollated`, `TProcessed`: intermediate values for the provided
+            [`Pipeline`][abstract_dataloader.spec].
+        `TProcessedInner`: output of the transforms, and input to the
+            post-composed transform.
+        `TProcessed`: output type.
+
+    Args:
+        transform: pipeline to compose.
+        pre: pre-transform to apply on the CPU side; skipped if `None`.
+        post: post-transform to apply on the GPU side; skipped if `None`.
+    """
+
+    def __init__(
+        self, transform: spec.Pipeline[
+            TRawInner, TTransformed, TCollated, TProcessedInner],
+        pre: spec.Transform[TRaw, TRawInner] | None = None,
+        post: spec.Transform[TProcessedInner, TProcessed] | None = None
+    ) -> None:
+        self.transform = transform
+        self.pre = pre
+        self.post = post
+
+        self.collate = transform.collate
+
+    def sample(self, data: TRaw) -> TTransformed:
+        """Transform single samples.
+
+        Args:
+            data: A single `TRaw` data sample.
+
+        Returns:
+            A single `TTransformed` data sample.
+        """
+        if self.pre is None:
+            transformed = cast(TRawInner, data)
+        else:
+            transformed = self.pre(data)
+        return self.transform.sample(transformed)
+
+    def batch(self, data: TCollated) -> TProcessed:
+        """Transform data batch.
+
+        Args:
+            data: A `TCollated` batch of data, nominally already sent to the
+                GPU.
+
+        Returns:
+            The `TProcessed` output, ready for the downstream model.
+        """
+        transformed = self.transform.batch(data)
+        if self.post is None:
+            return cast(TProcessed, transformed)
+        else:
+            return self.post(transformed)

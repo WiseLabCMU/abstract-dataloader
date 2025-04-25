@@ -3,9 +3,15 @@
 The implementations here provide
 [abstract](https://docs.python.org/3/library/abc.html) implementations of
 commonly reusable functions such as multi-trace datasets, and glue logic for
-synchronization. Where applicable, "polyfill" fallbacks also implement some
-methods in terms of more basic ones to allow for extending implementations
-to be more minimal, while still covering required functionality.
+synchronization.
+
+- Where applicable, "polyfill" fallbacks also implement some
+    methods in terms of more basic ones to allow for extending implementations
+    to be more minimal, while still covering required functionality.
+- In cases where fallbacks are sufficient to provide a minimal, non-crashing
+    implementation of the spec, we omit the [`ABC`][abc.] base class so that
+    the class is not technically abstract (though it still may be abstract,
+    in the sense that it may not be meaningful to use it directly.)
 
 Some other convenience methods are also provided which are not included in the
 core spec; software using the abstract data loader should not rely on these,
@@ -36,16 +42,14 @@ from jaxtyping import Int64, Integer
 
 from . import spec
 from .spec import (
-    BatchTransform,
     Collate,
     Metadata,
-    SampleTransform,
     Synchronization,
 )
 
 __all__ = [
-    "Dataset", "Metadata", "Sensor", "Synchronization", "Trace", "Transforms",
-    "SampleTransform", "Collate", "BatchTransform"
+    "Dataset", "Metadata", "Sensor", "Synchronization", "Trace", "Pipeline",
+    "Transform", "Collate"
 ]
 
 TSample = TypeVar("TSample")
@@ -56,17 +60,17 @@ TTrace = TypeVar("TTrace", bound=spec.Trace)
 class Sensor(ABC, spec.Sensor[TSample, TMetadata]):
     """Abstract Sensor Implementation.
 
-    Args:
-        metadata: sensor metadata, including timestamp information; must
-            implement [`Metadata`][abstract_dataloader.spec.].
-        name: friendly name; should only be used for debugging and inspection.
-
     Type Parameters:
         - `TSample`: sample data type which this `Sensor` returns. As a
             convention, we suggest returning "batched" data by default, i.e.
             with a leading singleton axis.
         - `TMetadata`: metadata type associated with this sensor; must
             implement [`Metadata`][abstract_dataloader.spec.].
+
+    Args:
+        metadata: sensor metadata, including timestamp information; must
+            implement [`Metadata`][abstract_dataloader.spec.].
+        name: friendly name; should only be used for debugging and inspection.
     """
 
     def __init__(self, metadata: TMetadata, name: str = "sensor") -> None:
@@ -138,6 +142,11 @@ class Sensor(ABC, spec.Sensor[TSample, TMetadata]):
 class Trace(spec.Trace[TSample]):
     """A trace, consisting of multiple simultaneously-recording sensors.
 
+    Type Parameters:
+        `Sample`: sample data type which this `Sensor` returns. As a
+            convention, we suggest returning "batched" data by default, i.e.
+            with a leading singleton axis.
+
     Args:
         sensors: sensors which make up this trace.
         sync: synchronization protocol used to create global samples from
@@ -145,11 +154,6 @@ class Trace(spec.Trace[TSample]):
             used directly; if `None`, sensors are expected to already be
             synchronous (equivalent to passing `{k: np.arange(N), ...}`).
         name: friendly name; should only be used for debugging and inspection.
-
-    Type Parameters:
-        `Sample`: sample data type which this `Sensor` returns. As a
-            convention, we suggest returning "batched" data by default, i.e.
-            with a leading singleton axis.
     """
 
     def __init__(
@@ -240,13 +244,13 @@ class Trace(spec.Trace[TSample]):
 class Dataset(spec.Dataset[TSample]):
     """A dataset, consisting of multiple traces, nominally concatenated.
 
-    Args:
-        traces: traces which make up this dataset.
-
     Type Parameters:
         `Sample`: sample data type which this `Sensor` returns. As a
             convention, we suggest returning "batched" data by default, i.e.
             with a leading singleton axis.
+
+    Args:
+        traces: traces which make up this dataset.
     """
 
     def __init__(self, traces: list[spec.Trace[TSample]]) -> None:
@@ -323,35 +327,81 @@ TCollated = TypeVar("TCollated", infer_variance=True)
 TProcessed = TypeVar("TProcessed", infer_variance=True)
 
 
-class Transforms(
-    ABC, spec.Transforms[TRaw, TTransformed, TCollated, TProcessed]
+class Transform(spec.Transform[TRaw, TTransformed]):
+    """Sample or batch data transform.
+
+    !!! warning
+
+        Transform types are not verified during initialization, and can only
+        be verified using runtime type checkers when the transforms are
+        applied.
+
+    Type Parameters:
+        - `TRaw`: Input data type.
+        - `TTransformed`: Output data type.
+
+    Args:
+        transforms: transforms to apply sequentially; each output type
+            must be the input type of the next transform.
+    """
+
+    def __init__(self, transforms: Sequence[spec.Transform]) -> None:
+        self.transforms = transforms
+
+    def __call__(self, data: TRaw) -> TTransformed:
+        """Apply transforms to a batch of samples.
+
+        Args:
+            data: A `TRaw` batch.
+
+        Returns:
+            A `TTransformed` batch.
+        """
+        for tf in self.transforms:
+            data = tf(data)
+        return cast(TTransformed, data)
+
+
+class Pipeline(
+    spec.Pipeline[TRaw, TTransformed, TCollated, TProcessed]
 ):
     """Dataloader transform pipeline.
 
-    This protocol is parameterized by four type variables which encode the
-    different data formats at each stage in the pipeline. This forms a
-    `Raw -> Transformed -> Collated -> Processed` pipeline with three
-    transforms:
-
-    - [`sample`][.]: a sample to sample transform; can be sequentially
-      assembled from one or more [`SampleTransform`][^.]s.
-    - [`collate`][.]: a list-of-samples to batch transform. Can use exactly one
-      [`Collate`][^.].
-    - [`batch`][.]: a batch to batch transform; can be sequentially assembled
-      from one or more [`BatchTransform`][^.]s.
-
     Composition Rules:
-        - A full set of `Transforms` can be sequentially pre-composed with one
-          or more [`SampleTransform`][^.]s or post-composed with one or more
-          [`BatchTransform`][^.]s.
-        - `Transforms` can always be composed in parallel.
+        - A full `Pipeline` can be sequentially pre-composed and/or
+          post-composed with one or more [`Transform`][^.]s; this is
+          implemented by [`generic.ComposedPipeline`][abstract_dataloader.].
+        - `Pipeline`s can always be composed in parallel; this is implemented
+          by [`generic.ParallelPipelines`][abstract_dataloader.], with a
+          pytorch [`nn.Module`][torch.]-compatible version in
+          [`torch.ParallelPipelines`][abstract_dataloader.].
 
     Type Parameters:
         - `TRaw`: Input data format.
         - `TTransformed`: Data after the first `transform` step.
         - `TCollated`: Data after the second `collate` step.
         - `TProcessed`: Output data format.
+
+    Args:
+        sample: sample transform; if `None`, the identity transform is used
+            (or the default transform, if overridden).
+        collate: sample collation; if `None`, the provided default is used.
+            Note that there is no fallback for collation, and
+            `NotImplementedError` will be raised if none is provided.
+        batch: batch collation; if `None`, the identity transform is used.
     """
+
+    def __init__(
+        self, sample: spec.Transform[TRaw, TTransformed] | None = None,
+        collate: spec.Collate[TTransformed, TCollated] | None = None,
+        batch: spec.Transform[TCollated, TProcessed] | None = None
+    ) -> None:
+        if sample is not None:
+            self.sample = sample
+        if collate is not None:
+            self.collate = collate
+        if batch is not None:
+            self.batch = batch
 
     def sample(self, data: TRaw) -> TTransformed:
         """Transform single samples.
@@ -372,7 +422,6 @@ class Transforms(
         """
         return cast(TTransformed, data)
 
-    @abstractmethod
     def collate(self, data: Sequence[TTransformed]) -> TCollated:
         """Collate a list of data samples into a GPU-ready batch.
 
@@ -389,7 +438,7 @@ class Transforms(
         Returns:
             A `TCollated` collection of the input sequence.
         """
-        ...
+        raise NotImplementedError()
 
     def batch(self, data: TCollated) -> TProcessed:
         """Transform data batch.
@@ -400,9 +449,11 @@ class Transforms(
 
         !!! info "Implementation as `torch.nn.Module`"
 
-            If these `Transforms` require GPU state, it may be helpful to
-            implement it as a `torch.nn.Module`. In this case, `batch`
-            should redirect to `__call__`, which in turn redirects to
+            If this `Pipeline` requires GPU state, and the GPU components
+            are tied to CPU-side or collation functions (so cannot be
+            separated and implemented separately) it may be helpful to
+            implement the `Pipeline` as a `torch.nn.Module`. In this case,
+            `batch` should redirect to `__call__`, which in turn redirects to
             [`nn.Module.forward`][torch.] in order to handle any registered
             pytorch hooks.
 

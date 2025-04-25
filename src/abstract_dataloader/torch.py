@@ -14,18 +14,18 @@
     `pip install abstract_dataloader[torch]`).
 """
 
-from typing import Any, Callable, Generic, Literal, Sequence, TypeVar, cast
+from typing import Any, Generic, Literal, Sequence, TypeVar, cast
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from . import abstract, generic, spec
+from . import generic, spec
 
-Raw = TypeVar("Raw")
-Transformed = TypeVar("Transformed")
-Collated = TypeVar("Collated")
-Processed = TypeVar("Processed")
+TRaw = TypeVar("TRaw")
+TTransformed = TypeVar("TTransformed")
+TCollated = TypeVar("TCollated")
+TProcessed = TypeVar("TProcessed")
 
 
 def _get_treelib():
@@ -44,29 +44,31 @@ def _get_treelib():
                 "present.")
 
 
-class TransformedDataset(Dataset[Transformed], Generic[Raw, Transformed]):
+class TransformedDataset(Dataset[TTransformed], Generic[TRaw, TTransformed]):
     """Pytorch-compatible dataset with transformation applied.
 
     Extends [`torch.utils.data.Dataset`][torch.utils.data.Dataset],
     implementing a torch "map-style" dataset.
 
+    Type Parameters:
+        - `TRaw`: raw data type from the dataloader.
+        - `TTransformed`: output data type from the provided transform function.
+
     Args:
         dataset: source dataset.
-        transform: transformation to apply to each sample when loading.
-
-    Type Parameters:
-        - `Raw`: raw data type from the dataloader.
-        - `Transformed`: output data type from the provided transform function.
+        transform: transformation to apply to each sample when loading (note
+            that `Transform[TRaw, TTransformed]` is equivalent to
+            `Callable[[TRaw], TTransformed]`).
     """
 
     def __init__(
-        self, dataset: spec.Dataset[Raw],
-        transform: Callable[[Raw], Transformed]
+        self, dataset: spec.Dataset[TRaw],
+        transform: spec.Transform[TRaw, TTransformed]
     ) -> None:
         self.dataset = dataset
         self.transform = transform
 
-    def __getitem__(self, index: int | np.integer) -> Transformed:
+    def __getitem__(self, index: int | np.integer) -> TTransformed:
         """Map-style dataset indexing.
 
         Args:
@@ -86,65 +88,61 @@ class TransformedDataset(Dataset[Transformed], Generic[Raw, Transformed]):
         return f"Transformed({repr(self.dataset)})"
 
 
-ComposedRaw = TypeVar("ComposedRaw", bound=dict[str, Any])
-ComposedTransformed = TypeVar("ComposedTransformed", bound=dict[str, Any])
-ComposedCollated = TypeVar("ComposedCollated", bound=dict[str, Any])
-ComposedProcessed = TypeVar("ComposedProcessed", bound=dict[str, Any])
+PRaw = TypeVar("PRaw", bound=dict[str, Any])
+PTransformed = TypeVar("PTransformed", bound=dict[str, Any])
+PCollated = TypeVar("PCollated", bound=dict[str, Any])
+PProcessed = TypeVar("PProcessed", bound=dict[str, Any])
 
 
-class ComposeTransforms(
+class ParallelPipelines(
     torch.nn.Module,
-    generic.ComposeTransforms[
-        ComposedRaw, ComposedTransformed,
-        ComposedCollated, ComposedProcessed]
+    generic.ParallelPipelines[PRaw, PTransformed, PCollated, PProcessed]
 ):
     """Transform Compositions, modified for Pytorch compatibility.
 
-    Any `nn.Module` transforms are registered to a separate `nn.ModuleDict`;
-    the original `.transforms` attribute is maintained with references to all
-    transforms.
+    Any [`nn.Module`][torch.] transforms are registered to a separate
+    [`nn.ModuleDict`][torch.]; the original `.transforms` attribute is
+    maintained with references to the full pipeline.
 
-    See [`generic.ComposeTransforms`][abstract_dataloader.generic.ComposeTransforms]
+    See [`generic.ParallelPipelines`][abstract_dataloader.]
     for more details about this implementation. `.forward` and `.__call__`
     should work as expected within pytorch.
 
     Args:
-        transforms: transforms to compose. The key indicates the subkey to
+        transforms: pipelines to compose. The key indicates the subkey to
             apply each transform to.
 
     Type Parameters:
-        - `ComposedRaw`: Input data format.
-        - `ComposedTransformed`: Data after the first `.transform` step.
-        - `ComposedCollated`: Data after the second `.collate` step.
-        - `ComposedProcessed`: Output data format.
+        - `PRaw`, `PTransformed`, `PCollated`, `PProcessed`: see
+          [`Pipeline`][abstract_dataloader.spec.].
     """
 
-    def __init__(self, **transforms: spec.Transforms) -> None:
+    def __init__(self, **transforms: spec.Pipeline) -> None:
         super().__init__()
         self.transforms = transforms
         self._transforms = torch.nn.ModuleDict({
             k: v for k, v in transforms.items()
             if isinstance(v, torch.nn.Module)})
 
-    def forward(self, data: ComposedCollated) -> ComposedProcessed:
+    def forward(self, data: PCollated) -> PProcessed:
         # We have to redefine this for some reason to make torch happy.
         # I think `nn.Module` has a generic `forward` implementation which
         # is clobbering `ComposeTransform`.
         return cast(
-            ComposedProcessed,
+            PProcessed,
             {k: v.batch(data[k]) for k, v in self.transforms.items()})
 
-    def batch(self, data: ComposedCollated) -> ComposedProcessed:
+    def batch(self, data: PCollated) -> PProcessed:
         """Alias `batch` to `__call__` to `forward` via `nn.Module`."""
         return self(data)
 
 
-class StackedSequenceTransforms(
-    generic.SequenceTransforms[Raw, Transformed, Collated, Processed]
+class StackedSequencePipeline(
+    generic.SequencePipeline[TRaw, TTransformed, TCollated, TProcessed]
 ):
     """Modify a transform to act on sequences.
 
-    Unlike the generic [`generic.SequenceTransforms`][abstract_dataloader.]
+    Unlike the generic [`generic.SequencePipeline`][abstract_dataloader.]
     implementation, this class places the sequence axis directly inside each
     tensor, so that each data type has axes `(batch, sequence, ...)`. For the
     same input,
@@ -193,17 +191,21 @@ class StackedSequenceTransforms(
         functionality. If `torch.utils._pytree` is removed in a later version,
         the constructor will raise `NotImplementedError`, and this fallback
         will need to be replaced.
+
+    Args:
+        transform: pipeline to transform to accept sequences.
     """
 
     def __init__(
-        self, transform: spec.Transforms[Raw, Transformed, Collated, Processed]
+        self, transform: spec.Pipeline[
+            TRaw, TTransformed, TCollated, TProcessed]
     ) -> None:
         super().__init__(transform)
         self.treelib = _get_treelib()
 
-    def collate(self, data: Sequence[Sequence[Transformed]]) -> Any:
+    def collate(self, data: Sequence[Sequence[TTransformed]]) -> Any:
         data_flat = sum((list(x) for x in data), start=[])
-        collated_flat = self.transforms.collate(data_flat)
+        collated_flat = self.transform.collate(data_flat)
         unflattened = self.treelib.tree_map(
             lambda x: x.reshape(len(data), -1, *x.shape[1:]),
             collated_flat)   # type: ignore
@@ -213,20 +215,18 @@ class StackedSequenceTransforms(
         batch = self.treelib.tree_leaves(data)[0].shape[0]  # type: ignore
         flattened = self.treelib.tree_map(
             lambda x: x.reshape(-1, *x.shape[2:]), data)
-        transformed = self.transforms.batch(cast(Collated, flattened))
+        transformed = self.transform.batch(cast(TCollated, flattened))
         unflattened = self.treelib.tree_map(
             lambda x: x.reshape(batch, -1, *x.shape[1:]),
             transformed)  # type: ignore
         return unflattened
 
 
-class Transforms(abstract.Transforms[Raw, Raw, Collated, Collated]):
-    """Generic numpy/pytorch transforms.
+class Collate(spec.Collate[TRaw, TCollated]):
+    """Generic numpy to pytorch collation.
 
     Converts numpy arrays to pytorch tensors, and either stacks or concatenates
     each value.
-
-    TODO: convert this to a `Collate`.
 
     !!! note
 
@@ -244,7 +244,7 @@ class Transforms(abstract.Transforms[Raw, Raw, Collated, Collated]):
         self.mode = mode
         self.treelib = _get_treelib()
 
-    def collate(self, data: Sequence[Raw]) -> Collated:
+    def __call__(self, data: Sequence[TRaw]) -> TCollated:
         if self.mode == "concat":
             return self.treelib.tree_map(
                 lambda *x: torch.concat([torch.from_numpy(s) for s in x]),
