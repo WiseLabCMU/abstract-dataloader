@@ -34,6 +34,11 @@ docs = [
     "mkdocstrings-python-xref == 1.16.*",
     "mkdocstrings[python] == 0.29.*"
 ]
+testing = [
+    "coverage",
+    "pytest",
+    "beartype"
+]
 torch = [
     "optree >= 0.13",       # Looks like optree wasn't really stable until 0.13.
     "torch >= 2.2"          # Pytorch 2.2 is the first version to add
@@ -41,4 +46,13 @@ torch = [
                             # `tree_map` was present earlier. In any case,
                             # Flash Attention v2 was added in `2.2` as well, so
                             # no one should be using `<2.2`.
+]
+
+[tool.coverage.report]
+exclude_also = [
+    '\.\.\.',
+    'def __repr__',
+    'if __name__ == .__main__.:',
+    'class .*\bProtocol\):',
+    'raise NotImplementedError',
 ]

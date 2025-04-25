@@ -35,7 +35,7 @@ types.
 
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Iterator, Mapping, Sequence, TypeVar, cast, overload
+from typing import (Iterator, Mapping, Sequence, TypeVar, cast, overload, Literal,)
 
 import numpy as np
 from jaxtyping import Int64, Integer
@@ -77,7 +77,15 @@ class Sensor(ABC, spec.Sensor[TSample, TMetadata]):
         self.metadata = metadata
         self.name = name
 
-    def stream(self, batch: int = 0) -> Iterator[TSample | list[TSample]]:
+    @overload
+    def stream(self, batch: Literal[0]) -> Iterator[TSample]: ...
+
+    @overload
+    def stream(self, batch: int = 0) -> Iterator[list[TSample]]: ...
+
+    def stream(
+        self, batch: int | Literal[0] = 0
+    ) -> Iterator[TSample | list[TSample]]:
         """Stream values recorded by this sensor.
 
         Fallback:

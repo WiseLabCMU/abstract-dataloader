@@ -52,15 +52,14 @@ plugins:
         - https://numpy.org/doc/stable/objects.inv
 
 markdown_extensions:
-  # Code blocks: https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+  - toc:
+      permalink: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
-  # Note / Warning / etc
-  # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
   - admonition
   - pymdownx.details

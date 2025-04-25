@@ -83,7 +83,8 @@ class Window(
                 Callable[[list[Sample]], SampleStack], lambda x: x)
         self.collate_fn = collate_fn
 
-        _future = None if future == 0 else future  # hack for negative indexing
+        # hack for negative indexing
+        _future = None if future == 0 else -future
         self.metadata = Metadata(
             timestamps=sensor.metadata.timestamps[past:_future])
 

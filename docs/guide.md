@@ -19,7 +19,7 @@ import abstract_dataloader as adl
 class Foo(TypedDict):
     x: float
 
-def example(adl_sensor: adl.Sensor[Foo], idx: int) -> float:
+def example(adl_sensor: adl.Sensor[Foo, Any], idx: int) -> float:
     x1 = adl_sensor[idx]['x']
     # pyright: x: float
     x2 = adl_sensor[x1]
