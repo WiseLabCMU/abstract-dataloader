@@ -81,4 +81,4 @@ def test_nearest_missing():
 def test_nearest_bounds():
     """generic.Nearest; invalid tol."""
     with pytest.raises(ValueError):
-        sync = generic.Nearest(reference="sensorX", tol=-0.5)
+        sync = generic.Nearest(reference="sensorX", tol=-0.5)  # noqa

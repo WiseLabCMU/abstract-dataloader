@@ -6,7 +6,9 @@ nav:
   - Programming Model:
     - Data Loading: dataloader.md
     - Data Transforms: transforms.md
-  - User Guide: guide.md
+  - User Guide:
+    - Usage: guide.md
+    - Type Systems: types.md
   - Abstract Dataloader:
     - Spec: spec.md
     - Abstract: abstract.md
@@ -20,6 +22,7 @@ theme:
   name: material
   icon:
     logo: material/cube-outline
+    annotation: material/arrow-right-circle
   font:
     code: monospace
   features:
@@ -27,7 +30,7 @@ theme:
     - navigation.expand
   palette:
     primary: red
-    accent: blue
+    accent: amber
 
 plugins:
 - search
@@ -58,8 +61,16 @@ markdown_extensions:
       pygments_lang_class: true
   - toc:
       permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - def_list
+  - attr_list
+  - md_in_html
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - admonition
   - pymdownx.details

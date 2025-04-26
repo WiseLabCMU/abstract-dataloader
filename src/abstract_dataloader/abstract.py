@@ -35,7 +35,15 @@ types.
 
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import (Iterator, Mapping, Sequence, TypeVar, cast, overload, Literal,)
+from typing import (
+    Iterator,
+    Literal,
+    Mapping,
+    Sequence,
+    TypeVar,
+    cast,
+    overload,
+)
 
 import numpy as np
 from jaxtyping import Int64, Integer
