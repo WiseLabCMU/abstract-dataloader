@@ -37,7 +37,7 @@ Other, non-standard-library alternatives:
 
 ??? info "Emulates primitive type: needed to work with tree libraries"
 
-    Tree manipulation libraries such as [optree](github.com/metaopt/optree), `torch.utils._pytree`, `jax.tree_utils`, and the internal implementation used by `lightning.LightningModule` allow for operations to be recursively applied across "PyTrees" of various built-in container types. Notably, since a `NamedTuple` is just a fancy tuple, and a `TypedDict` is just a dict, these tree libraries all work out-of-the-box with these containers, while other containers require library-specific registration to work.
+    Tree manipulation libraries such as [optree](https://github.com/metaopt/optree), `torch.utils._pytree`, `jax.tree_utils`, and the internal implementation used by `lightning.LightningModule` allow for operations to be recursively applied across "PyTrees" of various built-in container types. Notably, since a `NamedTuple` is just a fancy tuple, and a `TypedDict` is just a dict, these tree libraries all work out-of-the-box with these containers, while other containers require library-specific registration to work.
 
 ??? info "Protocol-like: in keeping with the spirit of the ADL"
 
@@ -64,7 +64,7 @@ Other, non-standard-library alternatives:
 
 !!! failure "Requires special handling by tree methods"
 
-    Doesn't work with tree manipulation routines (which recursively crawl data structures) out of the box. In addition to libraries like [`optree`](github.com/metaopt/optree) or `torch.utils._pytree`, this includes [`default_collate`][torch.utils.data.default_collate] in pytorch and [`transfer_batch_to_device`](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#transfer-batch-to-device) in pytorch lightning.
+    Doesn't work with tree manipulation routines (which recursively crawl data structures) out of the box. In addition to libraries like [`optree`](https://github.com/metaopt/optree) or `torch.utils._pytree`, this includes [`default_collate`][torch.utils.data.default_collate] in pytorch and [`transfer_batch_to_device`](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#transfer-batch-to-device) in pytorch lightning.
 
 !!! failure "Requires a separate protocol class"
     
@@ -243,7 +243,7 @@ Finally, in order to allow cross-compatibility between projects without having t
 
 ### Patching Downstream Applications
 
-**Pytorch dataloader `default_collate`**: There is currently no way to add custom node support to `torch.utils._pytree`, which is used by `default_collate`. Instead, we must provide a custom collate function with a supported pytree library, such as [optree](github.com/metaopt/optree).
+**Pytorch dataloader `default_collate`**: There is currently no way to add custom node support to `torch.utils._pytree`, which is used by `default_collate`. Instead, we must provide a custom collate function with a supported pytree library, such as [optree](https://github.com/metaopt/optree).
 
 - If dataclasses are registered with the optree root namespace, then the provided [`torch.Collate`][abstract_dataloader.torch.Collate] implementation is sufficient.
     ```python
