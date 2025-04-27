@@ -10,19 +10,16 @@ authors = [
 ]
 description = "Abstract Dataloader: Dataloader Not Included."
 readme = "README.md"
-requires-python = ">=3.10"  # Ideally we require 3.11 or higher since many
-                            # typing-related features have been added, but we
-                            # stick to 3.10 since many potential downstreams
-                            # are pinned to 3.10. This should be revisited in
-                            # the future.
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent"
 ]
 
 dependencies = [
-    "numpy >= 1.14",        # Only hard requirement is `np.integer` definition
-    "jaxtyping >= 0.2.32",  # Implements `TypeVar` as array type
+    "numpy >= 1.14",
+    "jaxtyping >= 0.2.32",
+    "typing-extensions >= 3.12",
 ]
 
 [project.optional-dependencies]
@@ -37,16 +34,35 @@ docs = [
 testing = [
     "coverage",
     "pytest",
-    "beartype"
+    "pyright",
+    "beartype",
+    "optree >= 0.13",
+    "torch >= 2.2",
 ]
 torch = [
-    "optree >= 0.13",       # Looks like optree wasn't really stable until 0.13.
-    "torch >= 2.2"          # Pytorch 2.2 is the first version to add
-                            # `torch.utils._pytree.tree_leaves`, though
-                            # `tree_map` was present earlier. In any case,
-                            # Flash Attention v2 was added in `2.2` as well, so
-                            # no one should be using `<2.2`.
+    "optree >= 0.13",
+    "torch >= 2.2"
 ]
+
+# Use pytorch-cpu when we install the `testing` extra, but pytorch-gpu when
+# we install the `torch` extra.
+[tool.uv]
+conflicts = [
+    [
+        { extra = "testing" },
+        { extra = "torch" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "testing" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.coverage.report]
 exclude_also = [

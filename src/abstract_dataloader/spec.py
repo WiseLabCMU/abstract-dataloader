@@ -24,13 +24,13 @@ from typing import (
     Iterator,
     Protocol,
     Sequence,
-    TypeVar,
     overload,
     runtime_checkable,
 )
 
 import numpy as np
 from jaxtyping import Float, Integer
+from typing_extensions import TypeVar
 
 __all__ = [
     "Dataset", "Metadata", "Sensor", "Synchronization", "Trace", "Pipeline",

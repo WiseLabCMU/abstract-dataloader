@@ -313,7 +313,7 @@ class ImageNP(TypedDict):
 
 !!! success "Allows deep type checking"
 
-    The type of each attribute can be checked by runtime type checkers when the `@dataclass` is instantiated.
+    The type of each attribute can be checked by runtime type checkers when the `NamedTuple` is instantiated.
 
 !!! success "Works with tree libraries out of the box"
 

@@ -37,7 +37,6 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import (
     Iterator,
-    Literal,
     Mapping,
     Sequence,
     TypeVar,
@@ -86,13 +85,13 @@ class Sensor(ABC, spec.Sensor[TSample, TMetadata]):
         self.name = name
 
     @overload
-    def stream(self, batch: Literal[0]) -> Iterator[TSample]: ...
+    def stream(self, batch: None = None) -> Iterator[TSample]: ...
 
     @overload
-    def stream(self, batch: int = 0) -> Iterator[list[TSample]]: ...
+    def stream(self, batch: int) -> Iterator[list[TSample]]: ...
 
     def stream(
-        self, batch: int | Literal[0] = 0
+        self, batch: int | None = None
     ) -> Iterator[TSample | list[TSample]]:
         """Stream values recorded by this sensor.
 
@@ -106,7 +105,7 @@ class Sensor(ABC, spec.Sensor[TSample, TMetadata]):
         Returns:
             Iterable of samples (or sequences of samples).
         """
-        if batch == 0:
+        if batch is None:
             for i in range(len(self)):
                 yield self[i]
         else:
@@ -337,10 +336,10 @@ class Dataset(spec.Dataset[TSample]):
             f"({len(self.traces)} traces, n={len(self)})")
 
 
-TRaw = TypeVar("TRaw", infer_variance=True)
-TTransformed = TypeVar("TTransformed", infer_variance=True)
-TCollated = TypeVar("TCollated", infer_variance=True)
-TProcessed = TypeVar("TProcessed", infer_variance=True)
+TRaw = TypeVar("TRaw")
+TTransformed = TypeVar("TTransformed")
+TCollated = TypeVar("TCollated")
+TProcessed = TypeVar("TProcessed")
 
 
 class Transform(spec.Transform[TRaw, TTransformed]):

@@ -67,12 +67,12 @@ class ParallelPipelines(
             {k: v.batch(data[k]) for k, v in self.transforms.items()})
 
 
-TRawInner = TypeVar("TRawInner", infer_variance=True)
-TRaw = TypeVar("TRaw", infer_variance=True)
-TTransformed = TypeVar("TTransformed", infer_variance=True)
-TCollated = TypeVar("TCollated", infer_variance=True)
-TProcessed = TypeVar("TProcessed", infer_variance=True)
-TProcessedInner = TypeVar("TProcessedInner", infer_variance=True)
+TRawInner = TypeVar("TRawInner")
+TRaw = TypeVar("TRaw")
+TTransformed = TypeVar("TTransformed")
+TCollated = TypeVar("TCollated")
+TProcessed = TypeVar("TProcessed")
+TProcessedInner = TypeVar("TProcessedInner")
 
 
 class ComposedPipeline(
@@ -84,14 +84,14 @@ class ComposedPipeline(
     """Compose transforms sequentially with pre and post transforms.
 
     Type Parameters:
-        `TRaw`: initial input type.
-        `TRawInner`: output of the pre-composed transform, and input to the
+        - `TRaw`: initial input type.
+        - `TRawInner`: output of the pre-composed transform, and input to the
             provided [`Pipeline`][abstract_dataloader.spec].
-        `TCollated`, `TProcessed`: intermediate values for the provided
+        - `TCollated`, `TProcessed`: intermediate values for the provided
             [`Pipeline`][abstract_dataloader.spec].
-        `TProcessedInner`: output of the transforms, and input to the
+        - `TProcessedInner`: output of the transforms, and input to the
             post-composed transform.
-        `TProcessed`: output type.
+        - `TProcessed`: output type.
 
     Args:
         transform: pipeline to compose.

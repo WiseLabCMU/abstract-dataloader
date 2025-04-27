@@ -155,10 +155,10 @@ class Window(
         return f"{repr(self.sensor)} x [-{self.past}:+{self.future}]"
 
 
-TRaw = TypeVar("TRaw", contravariant=True)
+TRaw = TypeVar("TRaw")
 TTransformed = TypeVar("TTransformed")
 TCollated = TypeVar("TCollated")
-TProcessed = TypeVar("TProcessed", covariant=True)
+TProcessed = TypeVar("TProcessed")
 
 
 class SequencePipeline(
