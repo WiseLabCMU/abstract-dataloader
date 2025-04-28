@@ -28,7 +28,7 @@ modules, etc.
 
     Custom data container classes such as `@dataclass` are only supported if
     `optree` is installed, and they are
-    [registered with optree][defining-the-dataclass]. However, `dict`, `list`,
+    [registered with optree][dataclass]. However, `dict`, `list`,
     `tuple`, and equivalent types such as `TypedDict` and `NamedTuple` will
     work [out of the box][creating-a-type-system].
 """
