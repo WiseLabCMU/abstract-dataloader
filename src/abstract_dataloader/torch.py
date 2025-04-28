@@ -1,5 +1,8 @@
 """Pytorch-ADL wrappers.
 
+These implementations provide interoperability with pytorch dataloaders,
+modules, etc.
+
 !!! warning
 
     This module is not automatically imported; you will need to explicitly
@@ -12,6 +15,22 @@
     Since pytorch is not declared as a required dependency, you will also need
     to install `torch` (or install the `torch` extra with
     `pip install abstract_dataloader[torch]`).
+
+!!! note
+
+    Recursive tree operations such as reshaping and stacking are performed
+    using the `optree` library, or, if that is not present,
+    `torch.utils._pytree`, which implements equivalent functionality. If
+    `torch.utils._pytree` is removed in a later version, the constructor will
+    raise `NotImplementedError`, and this fallback will need to be replaced.
+
+!!! warning
+
+    Custom data container classes such as `@dataclass` are only supported if
+    `optree` is installed, and they are
+    [registered with optree][defining-the-dataclass]. However, `dict`, `list`,
+    `tuple`, and equivalent types such as `TypedDict` and `NamedTuple` will
+    work [out of the box][creating-a-type-system].
 """
 
 from typing import Any, Generic, Literal, Sequence, TypeVar, cast
@@ -108,13 +127,13 @@ class ParallelPipelines(
     for more details about this implementation. `.forward` and `.__call__`
     should work as expected within pytorch.
 
-    Args:
-        transforms: pipelines to compose. The key indicates the subkey to
-            apply each transform to.
-
     Type Parameters:
         - `PRaw`, `PTransformed`, `PCollated`, `PProcessed`: see
           [`Pipeline`][abstract_dataloader.spec.].
+
+    Args:
+        transforms: pipelines to compose. The key indicates the subkey to
+            apply each transform to.
     """
 
     def __init__(self, **transforms: spec.Pipeline) -> None:
@@ -184,13 +203,9 @@ class StackedSequencePipeline(
     - `.transform`: flatten the collated data back to a `(batch sequence) ...`
       single leading batch axis, apply the transform, and reshape back.
 
-    !!! note
-
-        Reshaping is performed using the `optree` library, or, if that is not
-        present, `torch.utils._pytree`, which implements equivalent
-        functionality. If `torch.utils._pytree` is removed in a later version,
-        the constructor will raise `NotImplementedError`, and this fallback
-        will need to be replaced.
+    Type Parameters:
+        - `PRaw`, `PTransformed`, `PCollated`, `PProcessed`: see
+          [`Pipeline`][abstract_dataloader.spec.].
 
     Args:
         transform: pipeline to transform to accept sequences.
@@ -222,19 +237,15 @@ class StackedSequencePipeline(
         return unflattened
 
 
-class Collate(spec.Collate[TRaw, TCollated]):
+class Collate(spec.Collate[TTransformed, TCollated]):
     """Generic numpy to pytorch collation.
 
     Converts numpy arrays to pytorch tensors, and either stacks or concatenates
     each value.
 
-    !!! note
-
-        Stacking is performed using the `optree` library, or, if that is not
-        present, `torch.utils._pytree`, which implements equivalent
-        functionality. If `torch.utils._pytree` is removed in a later version,
-        the constructor will raise `NotImplementedError`, and this fallback
-        will need to be replaced.
+    Type Parameters:
+        - `TTransformed`: input sample type.
+        - `TCollated`: output collated type.
 
     Args:
         mode: whether to `stack` or `concat` during collation.
@@ -244,7 +255,7 @@ class Collate(spec.Collate[TRaw, TCollated]):
         self.mode = mode
         self.treelib = _get_treelib()
 
-    def __call__(self, data: Sequence[TRaw]) -> TCollated:
+    def __call__(self, data: Sequence[TTransformed]) -> TCollated:
         if self.mode == "concat":
             return self.treelib.tree_map(
                 lambda *x: torch.concat([torch.from_numpy(s) for s in x]),

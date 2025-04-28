@@ -43,4 +43,4 @@ pip install git+git@github.com:WiseLabCMU/abstract-dataloader.git
 ```
 
 > [!IMPORTANT]
-> To use the optional pytorch integrations, we also require either **`torch >= 2.2`** or **`torch` and [`optree`](https://github.com/metaopt/optree)** in order to have access to a fully-featured tree manipulation module. The included `torch` extra will install the latest pytorch and optree, with constraints `torch >= 2.2` and `optree >= 0.13`.
+> To use the optional pytorch integrations, we also require either **`torch >= 2.2`** (first version to add `torch.utils._pytree.tree_leaves`) or **`torch` and [`optree >= 0.13`](https://github.com/metaopt/optree)** (first "mostly stable" version) in order to have access to a fully-featured tree manipulation module. The included `torch` extra will install the latest pytorch and optree, with constraints `torch >= 2.2` and `optree >= 0.13`.

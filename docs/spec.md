@@ -1,9 +1,6 @@
-# Abstract Dataloader Specifications
-
 ::: abstract_dataloader.spec
     options:
-        show_root_toc_entry: true
-        show_root_heading: false
+        heading: "Abstract Dataloader Specifications"
         members:
         - Metadata
         - Sensor

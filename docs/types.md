@@ -1,6 +1,12 @@
 # Creating a Type System
 
-The Abstract Dataloader is built to facilitate the usage of *type systems* which describe the types (container type, numerical type, array shape, ...) that are loaded and transformed by dataloaders.
+!!! abstract "Recommendations"
+
+    - Set up a type system with [`@optree.dataclass.dataclass`es](https://optree.readthedocs.io/en/latest/dataclasses.html#optree.dataclasses.dataclass) of [jaxtyping](https://docs.kidger.site/jaxtyping/)-annotated arrays
+    - Create separate protocols if cross-compatibility is required
+    - Use a `optree.tree_map`-based `Collate` function
+
+The Abstract Dataloader is built to facilitate the usage of *type systems* which describe the types (container type, numerical type, array shape, ...) that are loaded and transformed by dataloaders. While [jaxtyping](https://docs.kidger.site/jaxtyping/) is the de-facto standard for declaring array shapes and numerical types, multiple standard library alternatives exist for the container type, each with their own confusing bugs and strange limitations.
 
 !!! question "Why Type Systems?"
 
@@ -15,7 +21,7 @@ The Abstract Dataloader is built to facilitate the usage of *type systems* which
 | Static type checking | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | Runtime type checking | :white_check_mark: | :x: | :white_check_mark: |
 | Support for generics | :white_check_mark: | :asterisk: | :asterisk: |
-| Emulates primitive type | :x: | :white_check_mark: | :white_check_mark: |
+| Approximately a primitive type | :asterisk: | :white_check_mark: | :white_check_mark: |
 | Protocol-like | :x: | :white_check_mark: | :x: |
 
 Other, non-standard-library alternatives:
@@ -35,7 +41,7 @@ Other, non-standard-library alternatives:
 
     Cross-compatibility of container types between numpy and pytorch is a huge plus, since loading data as numpy arrays and converting them to pytorch tensors is such a common design pattern. `Generic`s are the gold standard for expressing this pattern.
 
-??? info "Emulates primitive type: needed to work with tree libraries"
+??? info "Approximately a primitive type: needed to work with tree libraries"
 
     Tree manipulation libraries such as [optree](https://github.com/metaopt/optree), `torch.utils._pytree`, `jax.tree_utils`, and the internal implementation used by `lightning.LightningModule` allow for operations to be recursively applied across "PyTrees" of various built-in container types. Notably, since a `NamedTuple` is just a fancy tuple, and a `TypedDict` is just a dict, these tree libraries all work out-of-the-box with these containers, while other containers require library-specific registration to work.
 
@@ -62,16 +68,16 @@ Other, non-standard-library alternatives:
     # Image[np.ndarray], Image[torch.Tensor], etc.
     ```
 
-!!! failure "Requires special handling by tree methods"
+!!! failure "Requires special handling by (some) tree methods"
 
-    Doesn't work with tree manipulation routines (which recursively crawl data structures) out of the box. In addition to libraries like [`optree`](https://github.com/metaopt/optree) or `torch.utils._pytree`, this includes [`default_collate`][torch.utils.data.default_collate] in pytorch and [`transfer_batch_to_device`](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#transfer-batch-to-device) in pytorch lightning.
+    Dataclasses don't work with tree manipulation routines (which recursively crawl data structures) out of the box. In addition to libraries like [`optree`](https://github.com/metaopt/optree) or `torch.utils._pytree`, this includes [`default_collate`][torch.utils.data.default_collate] in pytorch.
+
+    Interestingly, pytorch lightning has [silently patched this on their end](https://github.com/Lightning-AI/utilities/blob/main/src/lightning_utilities/core/apply_func.py) - probably due to the increasing popularity of dataclasses.
 
 !!! failure "Requires a separate protocol class"
     
     Dataclasses are not "protocol-like", and two separately defined (but equivalent) dataclasses are not interchangeable. To support this, a separate protocol class needs to be defined.
 
-
-### Defining the `@dataclass`
 
 To define a generic dataclass container, which can contain pytorch or numpy types:
 
@@ -132,7 +138,7 @@ Finally, in order to allow cross-compatibility between projects without having t
     from typing import Protocol
 
     @runtime_checkable
-    class ImageProtocol(Protocol, Generic[TArray]):
+    class IsImage(Protocol, Generic[TArray]):
         image: UInt8[TArray, "B H W 3"]
         t: Float[TArray, "B"]
     ```
@@ -144,8 +150,8 @@ Finally, in order to allow cross-compatibility between projects without having t
         image: UInt8[TArray, "B H W 3"]
         t: Float[TArray, "B"]
 
-    isinstance(ImageRedefined(image=..., t=...), ImageProtocol)  # True
-    isinstance(Image(image=..., t=...), ImageProtocol)  # True
+    isinstance(ImageRedefined(image=..., t=...), IsImage)  # True
+    isinstance(Image(image=..., t=...), IsImage)  # True
     ```
 
 !!! danger "Runtime checking of protocol types may yield false positives"
@@ -153,6 +159,26 @@ Finally, in order to allow cross-compatibility between projects without having t
     Runtime `isinstance` checks on `runtime_checkable` protocols only check that the object has all of the properties that are specified by the protocol; however, it does not verify the types of these properties. This is termed an "unsafe overlap," and the python [Protocol specification](https://typing.python.org/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance) states that `isinstance` checks in type checkers should always fail in this case.
     
     Since the built-in `isinstance` does not follow this behavior, runtime type checkers (which all rely on `isinstance`) all appear to systematically ignore this.
+
+!!! warning "Patching `default_collate` in pytorch dataloaders"
+
+    There is currently no way to add custom node support to `torch.utils._pytree`, which is used by `default_collate`. Instead, we must provide a custom collate function with a supported pytree library, such as [optree](https://github.com/metaopt/optree).
+
+    - If dataclasses are registered with the optree root namespace, then the [`torch.Collate`][abstract_dataloader.torch.Collate] implementation which we provide is sufficient, as long as `optree` is installed.
+        ```python
+        from optree.dataclasses import dataclass as optree_dataclass
+        from optree.registry import __GLOBAL_NAMESPACE
+
+        dataclass = partial(optree_dataclass, namespace=__GLOBAL_NAMESPACE)
+        ```
+
+    - If dataclasses are registered with a named optree namespace, then a custom collate function should be provided which uses that namespace:
+        ```python
+        def collate_fn(data: Sequence[TRaw]) -> TCollated:
+            # Use the namespace provided to `optree.dataclasses.dataclass`
+            return optree.tree_map(
+                lambda *x: torch.stack(x), *data, namespace="data")
+        ```
 
 ??? quote "Full example code"
 
@@ -178,7 +204,7 @@ Finally, in order to allow cross-compatibility between projects without having t
             depth: Float[TArray, "B H W"]
 
         @runtime_checkable
-        class ImageProtocol(Protocol, Generic[TArray]):
+        class IsImage(Protocol, Generic[TArray]):
             image: UInt8[TArray, "B H W 3"]
             t: Float[TArray, "B"]
         ```
@@ -209,7 +235,7 @@ Finally, in order to allow cross-compatibility between projects without having t
             depth: Float[TArray, "B H W"]
 
         @runtime_checkable
-        class ImageProtocol(Protocol, Generic[TArray]):
+        class IsImage(Protocol, Generic[TArray]):
             image: UInt8[TArray, "B H W 3"]
             t: Float[TArray, "B"]
         ```
@@ -236,39 +262,10 @@ Finally, in order to allow cross-compatibility between projects without having t
             depth: Float[TArray, "B H W"]
 
         @runtime_checkable
-        class ImageProtocol(Protocol, Generic[TArray]):
+        class IsImage(Protocol, Generic[TArray]):
             image: UInt8[TArray, "B H W 3"]
             t: Float[TArray, "B"]
         ```
-
-### Patching Downstream Applications
-
-**Pytorch dataloader `default_collate`**: There is currently no way to add custom node support to `torch.utils._pytree`, which is used by `default_collate`. Instead, we must provide a custom collate function with a supported pytree library, such as [optree](https://github.com/metaopt/optree).
-
-- If dataclasses are registered with the optree root namespace, then the provided [`torch.Collate`][abstract_dataloader.torch.Collate] implementation is sufficient.
-    ```python
-    from optree.dataclasses import dataclass as optree_dataclass
-    from optree.registry import __GLOBAL_NAMESPACE
-
-    dataclass = partial(optree_dataclass, namespace=__GLOBAL_NAMESPACE)
-    ```
-
-- If dataclasses are registered with a named optree namespace, then a custom collate function should be provided which uses that namespace:
-    ```python
-    def collate_fn(data: Sequence[TRaw]) -> TCollated:
-        # Use the namespace provided to `optree.dataclasses.dataclass`
-        return optree.tree_map(
-            lambda *x: torch.stack(x), *data, namespace="data")
-    ```
-
-**Lightning `transfer_batch_to_device`**: this can be accomplished by providing a custom `transfer_batch_to_device`. This can simply be:
-```python
-def transfer_batch_to_device(self, data, device):
-    return optree.tree_map(lambda x: x.to(device), data)
-    # or
-    return optree.tree_map(lambda x: x.to(device), data, namespace="data")
-```
-This can technically also be achieved by adding a mixin to each `@dataclass` which implements a `.to(...)` method; however, this should be avoided, since it is only valid for `Container[torch.Tensor]` types, instead of for all `Container[ArrayType]`.
 
 ## `TypedDict`
 
@@ -351,12 +348,12 @@ Annoyingly, we now have to also define a matching set of `Protocol`s for both ve
 from typing import Protocol, runtime_checkable
 
 @runtime_checkable
-class ImageTorchProtocol(Protocol):
+class IsImageTorch(Protocol):
     image: UInt8[torch.Tensor, "B H W 3"]
     t: Float[torch.Tensor, "B"]
 
 @runtime_checkable
-class ImageNPProtocol(Protocol):
+class IsImageNP(Protocol):
     image: UInt8[np.ndarray, "B H W 3"]
     t: Float[np.ndarray, "B"]
 ```

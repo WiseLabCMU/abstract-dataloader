@@ -1,5 +1,11 @@
 # Using the Abstract Dataloader
 
+!!! abstract "Recommendations"
+
+    - Define your components using [`abstract`][abstract_dataloader.abstract] base classes, and specify input components using [`spec`][abstract_dataloader.spec] interfaces.
+    - Set up a [type system][creating-a-type-system], and provide your types to the ADL [`spec`][abstract_dataloader.spec] and [`generic`][abstract_dataloader.generic] components as type parameters.
+    - [Use a static type checker and a runtime type checker][verification-using-type-checking].
+
 ## Using ADL Components
 
 Code using ADL-compliant components (which may itself be another ADL-compliant component) should use the exports provided in the [`spec`][abstract_dataloader.spec] as type annotations. When combined with static type checkers such as
@@ -8,13 +14,13 @@ type checkers such as [beartype](https://github.com/beartype/beartype) and [type
 
 ``` python
 from dataclasses import dataclass
-import abstract_dataloader as adl
+from abstract_dataloader.spec import Sensor
 
 @dataclass
 class Foo:
     x: float
 
-def example(adl_sensor: adl.Sensor[Foo, Any], idx: int) -> float:
+def example(adl_sensor: Sensor[Foo, Any], idx: int) -> float:
     x1 = adl_sensor[idx].x
     # pyright: x: float
     x2 = adl_sensor[x1]
@@ -40,34 +46,39 @@ There are three ways to implement ADL-compliant components, in order of preferen
 
 The [`abstract_dataloader.abstract`][abstract_dataloader.abstract] submodule provides [Abstract Base Class](https://docs.python.org/3/library/abc.html) implementations of applicable specifications, with required methods annotated, and methods which can be written in terms of others ["polyfilled"](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill) by default. This is the fastest way to get started:
 
-``` python
-from dataclasses import dataclass
-import numpy as np
-from abstract_dataloader import spec, abstract
+=== "ADL-compliant Sensor"
 
-@dataclass
-class LidarMetadata(abstract.Metadata):
-    timestamps: Float64[np.ndarray, "N"]
-    # ... other data fields ...
+    ```python
+    class Lidar(abstract.Sensor[LidarData, LidarMetadata]):
 
-@dataclass
-class LidarData:
-    # ... definition of data fields ...
+        def __init__(
+            self, metadata: LidarMetadata, path: str, name: str = "sensor"
+        ) -> None:
+            self.path = path
+            super().__init__(metadata=metadata, name=name)
 
-class Lidar(abstract.Sensor[LidarData, LidarMetadata]):
+        def __getitem__(self, batch: int | np.integer) -> LidarData:
+            blob_path = os.path.join(self.path, self.name, f"{batch:06}.npz")
+            with open(blob_path) as f:
+                return dict(np.load(f))
+    ```
 
-    def __init__(
-        self, metadata: LidarMetadata, path: str, name: str = "sensor"
-    ) -> None:
-        self.path = path
-        super().__init__(metadata=metadata, name=name)
+=== "Setup & Types"
 
-    def __getitem__(self, batch: int | np.integer) -> LidarData:
-        blob_path = os.path.join(self.path, self.name, f"{batch:06}.npz")
-        with open(blob_path) as f:
-            npz: np.lib.npyio.NpzFile = np.load(f)
-            return dict(npz)
-```
+    ``` python
+    from dataclasses import dataclass
+    import numpy as np
+    from abstract_dataloader import spec, abstract
+
+    @dataclass
+    class LidarMetadata(abstract.Metadata):
+        timestamps: Float64[np.ndarray, "N"]
+        # ... other data fields ...
+
+    @dataclass
+    class LidarData:
+        # ... definition of data fields ...
+    ```
 
 !!! info "Prefer `spec` to `abstract` as type bounds"
 
@@ -77,32 +88,34 @@ class Lidar(abstract.Sensor[LidarData, LidarMetadata]):
 
 Implementations do not necessarily need to use the abstract base classes provided, and can instead use the provided specifications as base classes. This explicitly implements the defined specifications, which allows static type checkers to [provide some degree of verification](https://typing.python.org/en/latest/spec/protocol.html#explicitly-declaring-implementation) that you have implemented the specification.
 
-For example, in [`generic.Next`][abstract_dataloader.generic.Next]:
+!!! example
 
-``` python
-import numpy as np
-from jaxtyping import Float64, UInt32
-from abstract_dataloader import spec
+    The provided [`generic.Next`][abstract_dataloader.generic.Next] explicitly implements [`spec.Synchronization`][abstract_dataloader.spec.Synchronization]:
 
-class Next(Synchronization):
+    ``` python
+    import numpy as np
+    from jaxtyping import Float64, UInt32
+    from abstract_dataloader import spec
 
-    def __init__(self, reference: str) -> None:
-        self.reference = reference
+    class Next(spec.Synchronization):
 
-    def __call__(
-        self, timestamps: dict[str, Float64[np.ndarray, "_N"]]
-    ) -> dict[str, UInt32[np.ndarray, "M"]]:
-        ref_time_all = timestamps[self.reference]
-        start_time = max(t[0] for t in timestamps.values())
-        end_time = min(t[-1] for t in timestamps.values())
+        def __init__(self, reference: str) -> None:
+            self.reference = reference
 
-        start_idx = np.searchsorted(ref_time_all, start_time)
-        end_idx = np.searchsorted(ref_time_all, end_time)
-        ref_time = ref_time_all[start_idx:end_idx]
-        return {
-            k: np.searchsorted(v, ref_time).astype(np.uint32)
-            for k, v in timestamps.items()}
-```
+        def __call__(
+            self, timestamps: dict[str, Float64[np.ndarray, "_N"]]
+        ) -> dict[str, UInt32[np.ndarray, "M"]]:
+            ref_time_all = timestamps[self.reference]
+            start_time = max(t[0] for t in timestamps.values())
+            end_time = min(t[-1] for t in timestamps.values())
+
+            start_idx = np.searchsorted(ref_time_all, start_time)
+            end_idx = np.searchsorted(ref_time_all, end_time)
+            ref_time = ref_time_all[start_idx:end_idx]
+            return {
+                k: np.searchsorted(v, ref_time).astype(np.uint32)
+                for k, v in timestamps.items()}
+    ```
 
 ### Implicitly Implementing an ADL Component
 
@@ -124,3 +137,30 @@ When extending the abstract dataloader specifications with additional domain-spe
 
 - Return types cannot be more general than in the specifications. In general, this should never be an issue, since the return types provided in the abstract dataloader [specifications][abstract_dataloader.spec] are extremely general.
 - However, the generic types provided should be followed; for example, when [`Sensor.__getitem__`][abstract_dataloader.spec.Sensor.__getitem__] returns a certain `Sample`, [`Sensor.stream`][abstract_dataloader.spec.Sensor.stream] should also return that same type.
+
+!!! example
+
+    The [`abstract.Sensor`][abstract_dataloader.abstract.Sensor] provides a `stream` implementation with an additional `batch` argument that modifies the return type, while still remaining fully compliant with the [`Sensor` specification][abstract_dataloader.spec.Sensor].
+
+    ```python
+    @overload
+    def stream(self, batch: None = None) -> Iterator[TSample]: ...
+
+    @overload
+    def stream(self, batch: int) -> Iterator[list[TSample]]: ...
+
+    def stream(
+        self, batch: int | None = None
+    ) -> Iterator[TSample | list[TSample]]:
+        if batch is None:
+            for i in range(len(self)):
+                yield self[i]
+        else:
+            for i in range(len(self) // batch):
+                yield [self[j] for j in range(i * batch, (i + 1) * batch)]
+    ```
+
+    This is accomplished using an `@overload` with a default that falls back to the specification:
+
+    - If `.stream()` is used only as described by the [spec][abstract_dataloader.spec.Sensor.stream], `batch=None` matches the first overload, which returns an `Iterator[TSample]`, just as in the spec.
+    - If `.stream()` is passed a `batch=...` argument, the second overload now matches, instead returning an `Iterator[list[TSample]]`.

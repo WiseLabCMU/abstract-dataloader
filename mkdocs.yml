@@ -8,6 +8,7 @@ nav:
     - Data Transforms: transforms.md
   - User Guide:
     - Usage: guide.md
+    - Verification: verification.md
     - Type Systems: types.md
   - Abstract Dataloader:
     - Spec: spec.md
@@ -41,14 +42,17 @@ plugins:
       python_xref:
         options:
           docstring_style: google
-          show_root_members_full_path: true
           relative_crossrefs: true
-          show_root_full_path: true
           separate_signature: true
           line_length: 80
           show_signature_annotations: true
           signature_crossrefs: true
+          show_root_full_path: true
+          show_root_members_full_path: true
           show_symbol_type_heading: true
+          show_root_heading: true
+          show_root_toc_entry: true
+          heading_level: 1
         inventories:
         - https://pytorch.org/docs/stable/objects.inv
         - https://docs.python.org/3/objects.inv
