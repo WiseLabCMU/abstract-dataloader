@@ -35,7 +35,7 @@ This poses a substantial software engineering challenge. With many different mod
 1.  Data loading and processing components fragment into an exponential number of incompatible chunks, each of which encapsulates its required loading and processing functionality in a slightly different way. The barrier this presents to rapid prototyping needs no further explanation.
 2.  The various software components coalesce into a monolith which nominally supports the power set of all functionality. However, in addition to the compatibility issues that come with bundling heterogeneous requirements such as managing "non-dependencies" (i.e. dependencies which are required by the monolith, but not a particular task), this also presents a hidden challenge in that by support exponentially many possible configurations, such an architecture is also exponentially hard to debug and verify.
 
-However, we do not believe that these outcomes are a foregone connclusion. In particular, we believe that it's possible to write "one true dataloader" which can scale while maintaining intercompability by **not writing a common dataloader at all** -- but rather a common specification for writing dataloaders. We call this the **"abstract dataloader"**.
+However, we do not believe that these outcomes are a foregone conclusion. In particular, we believe that it's possible to write "one true dataloader" which can scale while maintaining intercompability by **not writing a common dataloader at all** -- but rather a common specification for writing dataloaders. We call this the **"abstract dataloader"**.
 
 ## Setup
 
