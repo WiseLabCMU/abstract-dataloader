@@ -15,12 +15,19 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent"
 ]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 
 dependencies = [
     "numpy >= 1.14",
     "jaxtyping >= 0.2.32",
     "typing-extensions >= 3.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/WiseLabCMU/abstract-dataloader"
+Documentation = "https://wiselabcmu.github.io/abstract-dataloader/"
+Issues = "https://github.com/WiseLabCMU/abstract-dataloader/issues"
 
 [project.optional-dependencies]
 docs = [

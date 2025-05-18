@@ -150,10 +150,19 @@ class Synchronization(Protocol):
 
 @runtime_checkable
 class Trace(Protocol, Generic[TSample]):
-    """A trace, consisting of multiple simultaneously-recording sensors.
+    """A sensor trace, consisting of multiple simultaneously-recording sensors.
 
     This protocol is parameterized by a generic `Sample` type, which can encode
     the expected data type of this trace.
+
+    !!! question "Why not `Sequence`?"
+
+        While collections of simultaneously-recorded sensor data are commonly
+        referred to as "sequences," the `Sequence` name conflicts with the
+        python standard-library [`Sequence`][collections.abc.Sequence] type.
+        Since the abstract dataloader heavily references these
+        [abstract types][collections.abc] (and you should too!), we use "Trace"
+        to avoid conflicts.
 
     Type Parameters:
         - `Sample`: sample data type which this `Trace` returns. As a
