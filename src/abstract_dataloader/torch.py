@@ -157,7 +157,8 @@ class ParallelPipelines(
 
 
 class StackedSequencePipeline(
-    generic.SequencePipeline[TRaw, TTransformed, TCollated, TProcessed]
+    torch.nn.Module,
+    spec.Pipeline[TRaw, TTransformed, TCollated, TProcessed]
 ):
     """Modify a transform to act on sequences.
 
@@ -215,8 +216,12 @@ class StackedSequencePipeline(
         self, transform: spec.Pipeline[
             TRaw, TTransformed, TCollated, TProcessed]
     ) -> None:
-        super().__init__(transform)
+        super().__init__()
+        self.transform = transform
         self.treelib = _get_treelib()
+
+    def sample(self, data: Sequence[TRaw]) -> list[TTransformed]:
+        return [self.transform.sample(x) for x in data]
 
     def collate(self, data: Sequence[Sequence[TTransformed]]) -> Any:
         data_flat = sum((list(x) for x in data), start=[])
