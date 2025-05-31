@@ -165,6 +165,7 @@ class SequencePipeline(
     spec.Pipeline[
         Sequence[TRaw], Sequence[TTransformed],
         Sequence[TCollated], Sequence[TProcessed]],
+    Generic[TRaw, TTransformed, TCollated, TProcessed]
 ):
     """Transform which passes an additional sequence axis through.
 
@@ -189,10 +190,10 @@ class SequencePipeline(
 
     ```
     [
-        Processed[s=0...b][t=0],
-        Processed[s=0...b][t=1],
+        Processed[s=0...b] [t=0],
+        Processed[s=0...b] [t=1],
         ...
-        Processed[s=0...b][t=n]
+        Processed[s=0...b] [t=n]
     ]
     ```
 
@@ -201,22 +202,22 @@ class SequencePipeline(
           [`Pipeline`][abstract_dataloader.spec.].
 
     Args:
-        transform: input transform.
+        pipeline: input pipeline.
     """
 
     def __init__(
-        self, transform: spec.Pipeline[
+        self, pipeline: spec.Pipeline[
             TRaw, TTransformed, TCollated, TProcessed]
     ) -> None:
-        self.transform = transform
+        self.pipeline = pipeline
 
     def sample(self, data: Sequence[TRaw]) -> list[TTransformed]:
-        return [self.transform.sample(x) for x in data]
+        return [self.pipeline.sample(x) for x in data]
 
     def collate(
         self, data: Sequence[Sequence[TTransformed]]
     ) -> list[TCollated]:
-        return [self.transform.collate(x) for x in zip(*data)]
+        return [self.pipeline.collate(x) for x in zip(*data)]
 
     def batch(self, data: Sequence[TCollated]) -> list[TProcessed]:
-        return [self.transform.batch(x) for x in data]
+        return [self.pipeline.batch(x) for x in data]

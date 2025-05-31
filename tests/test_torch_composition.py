@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from abstract_dataloader import abstract, generic, spec
+from abstract_dataloader import abstract, spec, torch
 
 
 class _ConcreteMetadata(spec.Metadata):
@@ -29,7 +29,7 @@ def test_window(parallel):
     """Test windowing."""
     meta = _ConcreteMetadata(5)
 
-    partialed = generic.Window.from_partial_sensor(
+    partialed = torch.Window.from_partial_sensor(
         lambda path: _ConcreteSensor(meta),
         past=1, future=1, parallel=parallel)
     windowed = partialed("ignored")
@@ -46,7 +46,7 @@ def test_transform():
         sample=lambda data: data * 2,  # type: ignore
         collate=lambda data: data,
         batch=lambda data: [x * 5 for x in data])
-    sequenced = generic.SequencePipeline(pipeline)
+    sequenced = torch.SequencePipeline(pipeline)
 
     raw = [[1, 4], [2, 5], [3, 6]]
     processed = _apply_pipeline(sequenced, raw)
@@ -65,7 +65,7 @@ def test_parallel():
         collate=lambda data: data,
         batch=lambda data: [x + 2 for x in data])
 
-    composed = generic.ParallelPipelines(a=pipeline_a, b=pipeline_b)
+    composed = torch.ParallelPipelines(a=pipeline_a, b=pipeline_b)
     raw = [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
     processed = _apply_pipeline(composed, raw)
     assert processed == {"a": [10, 30], "b": [5, 7]}
@@ -78,17 +78,17 @@ def test_sequential():
     post = lambda data: [x * 5 for x in data]
     raw = [1, 2, 3]
 
-    composed = generic.ComposedPipeline(pipeline=pipeline, pre=pre, post=post)
+    composed = torch.ComposedPipeline(pipeline=pipeline, pre=pre, post=post)
     processed = _apply_pipeline(composed, raw)
     assert processed == [10, 20, 30]
 
-    composed = generic.ComposedPipeline(pipeline=pipeline, pre=pre)
+    composed = torch.ComposedPipeline(pipeline=pipeline, pre=pre)
     processed = _apply_pipeline(composed, raw)
     assert processed == [2, 4, 6]
 
-    composed = generic.ComposedPipeline(pipeline=pipeline, post=post)
+    composed = torch.ComposedPipeline(pipeline=pipeline, post=post)
     processed = _apply_pipeline(composed, raw)
     assert processed == [5, 10, 15]
 
-    composed = generic.ComposedPipeline(pipeline=pipeline)
+    composed = torch.ComposedPipeline(pipeline=pipeline)
     assert _apply_pipeline(composed, raw) == _apply_pipeline(pipeline, raw)

@@ -143,7 +143,7 @@ class Synchronization(Protocol):
         Returns:
             A dictionary, where keys correspond to each sensor, and values
                 correspond to the indices which map global indices to sensor
-                indices, i.e. `global[sensor, i] = sensor[sync[sensor][i]]`.
+                indices, i.e. `global[sensor, i] = sensor[sync[sensor] [i]]`.
         """
         ...
 
@@ -159,8 +159,9 @@ class Trace(Protocol, Generic[TSample]):
 
         While collections of simultaneously-recorded sensor data are commonly
         referred to as "sequences," the `Sequence` name conflicts with the
-        python standard-library [`Sequence`][collections.abc.Sequence] type.
-        Since the abstract dataloader heavily references these
+        python standard-library
+        [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)
+        type. Since the abstract dataloader heavily references these
         [abstract types][collections.abc] (and you should too!), we use "Trace"
         to avoid conflicts.
 
