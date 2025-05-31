@@ -213,9 +213,9 @@ class Trace(spec.Trace[TSample]):
             format provided as the `sensors` parameter:
 
             ```python
-            trace[i] = {s
+            trace[i] = {
                 "sensor_a": sensor_a[synchronized_indices["sensor_a"] [i]],
-                "sensor_b": sensor_a[ynchronized_indices["sensor_b"] [i]],
+                "sensor_b": sensor_a[synchronized_indices["sensor_b"] [i]],
                 ...
             }
             ```

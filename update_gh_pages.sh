@@ -11,6 +11,7 @@ git remote add origin git@github.com:WiseLabCMU/abstract-dataloader.git;
 cd ..;
 cp -r site/* build/;
 cd build;
+touch .nojekyll;
 git add --all;
 git commit -m "Update gh-pages";
 git push -f origin gh-pages;
