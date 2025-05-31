@@ -2,7 +2,9 @@
 
 !!! abstract "TL;DR"
 
-    A [`Transform`][abstract_dataloader.spec.Transform] is any data transformation. [`Collate`][abstract_dataloader.spec.Collate] is a special transform which aggregates a [`Sequence`][typing.Sequence] of data into a batch. Combining a CPU-side [`Transform`][abstract_dataloader.spec.Transform], a [`Collate`][abstract_dataloader.spec.Collate] function, and a GPU-side [`Transform`][abstract_dataloader.spec.Transform] yields a data [`Pipeline`][abstract_dataloader.spec.Pipeline].
+    - A [`Transform`][abstract_dataloader.spec.Transform] is any data transformation.
+    - [`Collate`][abstract_dataloader.spec.Collate] is a special transform which aggregates a [`Sequence`][typing.Sequence] of data into a batch.
+    - Combining a CPU-side [`Transform`][abstract_dataloader.spec.Transform], a [`Collate`][abstract_dataloader.spec.Collate] function, and a GPU-side [`Transform`][abstract_dataloader.spec.Transform] yields a data [`Pipeline`][abstract_dataloader.spec.Pipeline].
 
 ## Transforms
 

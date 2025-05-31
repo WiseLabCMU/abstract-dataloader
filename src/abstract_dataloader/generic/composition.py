@@ -81,7 +81,7 @@ class ComposedPipeline(
         TRaw, TRawInner, TTransformed,
         TCollated, TProcessedInner, TProcessed]
 ):
-    """Compose transforms sequentially with pre and post transforms.
+    """Compose pipeline sequentially with pre and post transforms.
 
     Type Parameters:
         - `TRaw`: initial input type.
@@ -94,22 +94,22 @@ class ComposedPipeline(
         - `TProcessed`: output type.
 
     Args:
-        transform: pipeline to compose.
+        pipeline: pipeline to compose.
         pre: pre-transform to apply on the CPU side; skipped if `None`.
         post: post-transform to apply on the GPU side; skipped if `None`.
     """
 
     def __init__(
-        self, transform: spec.Pipeline[
+        self, pipeline: spec.Pipeline[
             TRawInner, TTransformed, TCollated, TProcessedInner],
         pre: spec.Transform[TRaw, TRawInner] | None = None,
         post: spec.Transform[TProcessedInner, TProcessed] | None = None
     ) -> None:
-        self.transform = transform
+        self.pipeline = pipeline
         self.pre = pre
         self.post = post
 
-        self.collate = transform.collate
+        self.collate = pipeline.collate
 
     def sample(self, data: TRaw) -> TTransformed:
         """Transform single samples.
@@ -124,7 +124,7 @@ class ComposedPipeline(
             transformed = cast(TRawInner, data)
         else:
             transformed = self.pre(data)
-        return self.transform.sample(transformed)
+        return self.pipeline.sample(transformed)
 
     def batch(self, data: TCollated) -> TProcessed:
         """Transform data batch.
@@ -136,7 +136,7 @@ class ComposedPipeline(
         Returns:
             The `TProcessed` output, ready for the downstream model.
         """
-        transformed = self.transform.batch(data)
+        transformed = self.pipeline.batch(data)
         if self.post is None:
             return cast(TProcessed, transformed)
         else:

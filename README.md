@@ -36,10 +36,8 @@ However, we do not believe that these outcomes are a foregone conclusion. In par
 
 While it is not necessary to install the `abstract_dataloader` in order to take advantage of ADL-compliant components, installing this library provides access to `Protocol` types which describe each interface, as well as generic components which may be useful for working with ADL-compliant components.
 
-The `abstract_dataloader` is currently distributed using github:
-
 ```sh
-pip install git+git@github.com:WiseLabCMU/abstract-dataloader.git
+pip install abstract-dataloader
 ```
 
 > [!IMPORTANT]

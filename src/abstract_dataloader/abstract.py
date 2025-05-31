@@ -214,8 +214,8 @@ class Trace(spec.Trace[TSample]):
 
             ```python
             trace[i] = {
-                "sensor_a": sensor_a[synchronized_indices["sensor_a"][i]],
-                "sensor_b": sensor_a[synchronized_indices["sensor_b"][i]],
+                "sensor_a": sensor_a[synchronized_indices["sensor_a"] [i]],
+                "sensor_b": sensor_a[synchronized_indices["sensor_b"] [i]],
                 ...
             }
             ```

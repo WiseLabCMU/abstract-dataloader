@@ -143,17 +143,27 @@ class Synchronization(Protocol):
         Returns:
             A dictionary, where keys correspond to each sensor, and values
                 correspond to the indices which map global indices to sensor
-                indices, i.e. `global[sensor, i] = sensor[sync[sensor][i]]`.
+                indices, i.e. `global[sensor, i] = sensor[sync[sensor] [i]]`.
         """
         ...
 
 
 @runtime_checkable
 class Trace(Protocol, Generic[TSample]):
-    """A trace, consisting of multiple simultaneously-recording sensors.
+    """A sensor trace, consisting of multiple simultaneously-recording sensors.
 
     This protocol is parameterized by a generic `Sample` type, which can encode
     the expected data type of this trace.
+
+    !!! question "Why not `Sequence`?"
+
+        While collections of simultaneously-recorded sensor data are commonly
+        referred to as "sequences," the `Sequence` name conflicts with the
+        python standard-library
+        [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)
+        type. Since the abstract dataloader heavily references these
+        [abstract types][collections.abc] (and you should too!), we use "Trace"
+        to avoid conflicts.
 
     Type Parameters:
         - `Sample`: sample data type which this `Trace` returns. As a
