@@ -18,8 +18,8 @@ class ParallelPipelines(
 ):
     """Transform Compositions, modified for Pytorch compatibility.
 
-    Any [`nn.Module`][torch.] transforms are registered to a separate
-    [`nn.ModuleDict`][torch.]; the original `.transforms` attribute is
+    Any [`nn.Module`][?torch.] transforms are registered to a separate
+    [`nn.ModuleDict`][?torch.]; the original `.transforms` attribute is
     maintained with references to the full pipeline.
 
     See [`generic.ParallelPipelines`][abstract_dataloader.]
