@@ -320,7 +320,7 @@ class Dataset(spec.Dataset[TSample]):
             remainder = index
         # We have to ignore type here since python's Sequence type is not
         # well defined, i.e., does not allow `np.integer` indexing even though
-        # `np.integer`` is interchangeable with `int`.
+        # `np.integer` is interchangeable with `int`.
         return self.traces[trace][remainder]  # type: ignore
 
     def __len__(self) -> int:

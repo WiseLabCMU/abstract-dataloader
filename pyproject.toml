@@ -35,7 +35,7 @@ docs = [
     # API is changed, so we pin here just in case.
     "mkdocs == 1.6.*",
     "mkdocs-material == 9.6.*",
-    "mkdocstrings-python-xref >= 1.16.3",
+    "mkdocstrings-python-xref == 1.16.3",
     "mkdocstrings-python == 1.16.6",
     "mkdocstrings == 0.29.*",
     "ruff"
