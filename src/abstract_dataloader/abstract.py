@@ -172,7 +172,7 @@ class Trace(spec.Trace[TSample]):
     """
 
     def __init__(
-        self, sensors: dict[str, spec.Sensor],
+        self, sensors: Mapping[str, spec.Sensor],
         sync: (
             spec.Synchronization | Mapping[str, Integer[np.ndarray, "N"]]
             | None) = None,
@@ -268,7 +268,7 @@ class Dataset(spec.Dataset[TSample]):
         traces: traces which make up this dataset.
     """
 
-    def __init__(self, traces: list[spec.Trace[TSample]]) -> None:
+    def __init__(self, traces: Sequence[spec.Trace[TSample]]) -> None:
         self.traces = traces
 
     @cached_property
@@ -318,7 +318,10 @@ class Dataset(spec.Dataset[TSample]):
             remainder = index - self.indices[trace - 1]
         else:
             remainder = index
-        return self.traces[trace][remainder]
+        # We have to ignore type here since python's Sequence type is not
+        # well defined, i.e., does not allow `np.integer` indexing even though
+        # `np.integer` is interchangeable with `int`.
+        return self.traces[trace][remainder]  # type: ignore
 
     def __len__(self) -> int:
         """Total number of samples in this dataset.

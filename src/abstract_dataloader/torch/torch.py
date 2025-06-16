@@ -35,7 +35,7 @@ def _get_treelib():
 class TransformedDataset(Dataset[TTransformed], Generic[TRaw, TTransformed]):
     """Pytorch-compatible dataset with transformation applied.
 
-    Extends [`torch.utils.data.Dataset`][torch.utils.data.Dataset],
+    Extends [`torch.utils.data.Dataset`][?torch.utils.data.Dataset],
     implementing a torch "map-style" dataset.
 
     Type Parameters:
@@ -78,7 +78,8 @@ class TransformedDataset(Dataset[TTransformed], Generic[TRaw, TTransformed]):
 
 class StackedSequencePipeline(
     torch.nn.Module,
-    spec.Pipeline[TRaw, TTransformed, TCollated, TProcessed]
+    spec.Pipeline[
+        Sequence[TRaw], Sequence[TTransformed], TCollated, TProcessed]
 ):
     """Modify a pipeline to act on sequences.
 

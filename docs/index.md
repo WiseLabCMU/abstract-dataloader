@@ -74,3 +74,40 @@ As an explicit goal is to minimize dependency constraints, only the following de
 !!! warning "Pytorch Integration"
 
     To use the optional pytorch integrations, we also require either **`torch >= 2.2`** (first version to add `torch.utils._pytree.tree_leaves`) or **`torch` and [`optree >= 0.13`](https://github.com/metaopt/optree)** (first "mostly stable" version) in order to have access to a fully-featured tree manipulation module. The included `torch` extra will install the latest pytorch and optree, with constraints `torch >= 2.2` and `optree >= 0.13`.
+
+## Contributing
+
+Please report any bugs, type-related issues/inconsistencies, and feel free to suggest new generic components! Any issues or PRs are welcome.
+
+=== "Run Tests"
+
+    The test suite isn't fully automated yet; run tests with
+    ```sh
+    uv run --extra testing coverage run -m pytest tests
+    uv run --extra testing coverage report
+    ```
+
+    !!! info
+
+        We currently have 100% coverage, with a few "non-functional" items excluded:
+
+        - `__repr__` methods
+        - Protocols, `...` placeholders
+        - `NotImplementedError`s
+
+=== "Build Docs"
+
+    Build docs with
+    ```sh
+    uv run --extra docs mkdocs serve
+    ```
+
+    Push to github pages with
+    ```sh
+    uv run --extra docs mkdocs build
+    ./update_gh_pages.sh
+    ```
+
+    !!! info
+
+        The documentation builder fetches external inventories (i.e., `objects.inv`) in order to properly link external references. This requires internet access; if behind a firewall, make sure that these inventories are not blocked!
