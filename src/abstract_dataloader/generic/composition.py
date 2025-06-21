@@ -1,6 +1,7 @@
 """Transform compositions."""
 
-from typing import Any, Generic, Sequence, TypeVar, cast
+from collections.abc import Sequence
+from typing import Any, Generic, TypeVar, cast
 
 from abstract_dataloader import spec
 

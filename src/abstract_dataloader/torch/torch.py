@@ -1,6 +1,7 @@
 """Pytorch-specific components."""
 
-from typing import Any, Generic, Literal, Sequence, TypeVar, cast
+from collections.abc import Sequence
+from typing import Any, Generic, Literal, TypeVar, cast
 
 import numpy as np
 import torch

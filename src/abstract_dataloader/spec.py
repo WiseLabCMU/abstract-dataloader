@@ -19,14 +19,8 @@ implement.
     `Composition Rules` section.
 """
 
-from typing import (
-    Generic,
-    Iterator,
-    Protocol,
-    Sequence,
-    overload,
-    runtime_checkable,
-)
+from collections.abc import Iterator, Sequence
+from typing import Generic, Protocol, overload, runtime_checkable
 
 import numpy as np
 from jaxtyping import Float, Integer
@@ -129,6 +123,21 @@ class Synchronization(Protocol):
 
     Defines a rule for creating matching sensor index tuples which correspond
     to some kind of global index.
+
+    !!! info "Generic Implementations"
+
+        The following generic implementations are included with
+        [`abstract_dataloader.generic`][abstract_dataloader.generic]:
+
+        - [`Empty`][abstract_dataloader.generic.Empty]: a no-op for
+            intializing a trace without any synchronization (i.e., just as a
+            container of sensors).
+        - [`Nearest`][abstract_dataloader.generic.Nearest]: find the nearest
+            measurement for each sensor relative to the reference sensor's
+            measurements.
+        - [`Next`][abstract_dataloader.generic.Next]: find the next
+            measurement for each sensor relative to the reference sensor's
+            measurements.
     """
 
     def __call__(

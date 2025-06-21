@@ -4,9 +4,12 @@ from typing import Sequence
 
 import numpy as np
 import pytest
+from beartype.claw import beartype_package
 from beartype.door import is_bearable, is_subhint
 
-from abstract_dataloader import abstract, generic, spec
+beartype_package("abstract_dataloader")
+
+from abstract_dataloader import abstract, generic, spec  # noqa: E402
 
 
 def test_spec_types():

@@ -55,6 +55,10 @@ While it is not necessary to install the `abstract_dataloader` in order to take 
     pip install git+git@github.com:WiseLabCMU/abstract-dataloader.git
     ```
 
+!!! question "Missing Component?"
+
+    If you have any ideas for a commonly used generic components to add to [`abstract_dataloader.generic`][abstract_dataloader.generic], please open an issue!
+
 ## Dependencies
 
 As an explicit goal is to minimize dependency constraints, only the following dependencies are required:
