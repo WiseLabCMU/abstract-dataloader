@@ -4,7 +4,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/abstract-dataloader)
 ![PyPI - Types](https://img.shields.io/pypi/types/abstract-dataloader)
 ![GitHub](https://img.shields.io/github/license/WiseLabCMU/abstract-dataloader)
-[![CI](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/main.yml/badge.svg)](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/main.yml)
+[![CI](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/ci.yml/badge.svg)](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/ci.yml)
 ![GitHub issues](https://img.shields.io/github/issues/WiseLabCMU/abstract-dataloader)
 
 ## What is the Abstract Dataloader?
