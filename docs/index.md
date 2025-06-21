@@ -1,5 +1,12 @@
 # Abstract Dataloader: Dataloader Not Included
 
+[![pypi version](https://img.shields.io/pypi/v/abstract-dataloader.svg)](https://pypi.org/project/abstract-dataloader/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/abstract-dataloader)
+![PyPI - Types](https://img.shields.io/pypi/types/abstract-dataloader)
+![GitHub](https://img.shields.io/github/license/WiseLabCMU/abstract-dataloader)
+[![CI](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/ci.yml/badge.svg)](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/ci.yml)
+![GitHub issues](https://img.shields.io/github/issues/WiseLabCMU/abstract-dataloader)
+
 ## What is the Abstract Dataloader?
 
 The **abstract dataloader** (ADL) is a minimalist [specification][abstract_dataloader.spec] for creating composable and interoperable dataloaders and data transformations, along with [abstract template implementations][abstract_dataloader.abstract] and reusable [generic components][abstract_dataloader.generic], including a [pytorch interface][abstract_dataloader.torch].
