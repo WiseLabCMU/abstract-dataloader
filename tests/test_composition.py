@@ -2,8 +2,11 @@
 
 import numpy as np
 import pytest
+from beartype.claw import beartype_package
 
-from abstract_dataloader import abstract, generic, spec
+beartype_package("abstract_dataloader")
+
+from abstract_dataloader import abstract, generic, spec  # noqa: E402
 
 
 class _ConcreteMetadata(spec.Metadata):

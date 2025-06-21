@@ -2,10 +2,13 @@
 
 import numpy as np
 import torch
+from beartype.claw import beartype_package
 from torch import nn
 
-from abstract_dataloader import abstract
-from abstract_dataloader import torch as adl_torch
+beartype_package("abstract_dataloader")
+
+from abstract_dataloader import abstract  # noqa: E402
+from abstract_dataloader import torch as adl_torch  # noqa: E402
 
 
 def test_composition():

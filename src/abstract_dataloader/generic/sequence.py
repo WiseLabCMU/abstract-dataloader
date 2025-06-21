@@ -1,8 +1,9 @@
 """Protocol transforms for working with sequences."""
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
-from typing import Callable, Generic, Sequence, TypeVar, cast
+from typing import Generic, TypeVar, cast
 
 import numpy as np
 from jaxtyping import Float64

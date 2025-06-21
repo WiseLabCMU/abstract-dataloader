@@ -19,14 +19,8 @@ implement.
     `Composition Rules` section.
 """
 
-from typing import (
-    Generic,
-    Iterator,
-    Protocol,
-    Sequence,
-    overload,
-    runtime_checkable,
-)
+from collections.abc import Iterator, Sequence
+from typing import Generic, Protocol, overload, runtime_checkable
 
 import numpy as np
 from jaxtyping import Float, Integer

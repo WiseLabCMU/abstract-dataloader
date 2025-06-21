@@ -2,9 +2,12 @@
 
 import numpy as np
 import pytest
+from beartype.claw import beartype_package
 from beartype.door import is_bearable
 
-from abstract_dataloader import generic, spec
+beartype_package("abstract_dataloader")
+
+from abstract_dataloader import generic, spec  # noqa: E402
 
 
 def test_sync_types():
