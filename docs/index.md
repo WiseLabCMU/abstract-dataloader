@@ -90,12 +90,20 @@ As an explicit goal is to minimize dependency constraints, only the following de
 
 Please report any bugs, type-related issues/inconsistencies, and feel free to suggest new generic components! Any issues or PRs are welcome.
 
+=== "Environment"
+
+    Our development environment uses [uv](https://docs.astral.sh/uv/getting-started/installation/); install (and set up the [pre-commit](https://pre-commit.com/) hooks) with
+    ```sh
+    uv sync --extra dev
+    uv run pre-commit install
+    ```
+    You can test the hooks with `uv run pre-commit run`; these hooks (`ruff` + `pyright` + `pytest`) mirror the CI.
+
 === "Run Tests"
 
-    The test suite isn't fully automated yet; run tests with
+    Run tests with
     ```sh
-    uv run --extra testing coverage run -m pytest tests
-    uv run --extra testing coverage report
+    uv run --extra dev pytest -ra --cov --cov-report=html --cov-report=term -- tests
     ```
 
     !!! info

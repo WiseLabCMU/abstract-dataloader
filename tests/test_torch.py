@@ -57,8 +57,8 @@ def test_composition():
 def test_collate():
     """Test collate function."""
     data = {
-        "a": np.random.uniform(size=(3, 5)),
-        "b": np.random.uniform(size=(3, 4))
+        "a": np.random.default_rng().uniform(size=(3, 5)),
+        "b": np.random.default_rng().uniform(size=(3, 4))
     }
 
     collate1 = adl_torch.Collate(mode='stack')

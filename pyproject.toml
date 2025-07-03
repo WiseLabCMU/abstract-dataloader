@@ -42,36 +42,57 @@ docs = [
     "mkdocstrings-python-xref == 1.16.3",
     "mkdocstrings-python == 1.16.6",
     "mkdocstrings == 0.29.*",
-    "ruff"
+    "ruff >= 0.10.0"
 ]
-testing = [
+dev = [
+    "pre-commit >= 4.0.0",
     "coverage",
     "pytest",
     "pytest-cov",
-    "pyright",
-    "beartype",
+    "beartype >= 0.20.0",
     "optree >= 0.13",
     "torch >= 2.2",
-    "pyright",
+    "pyright >= 1.0.0",
+    "ruff >= 0.10.0"
 ]
 torch = [
     "optree >= 0.13",
     "torch >= 2.2"
 ]
 
+[tool.ruff]
+line-length = 80
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    "W", "N", "I", "D", "NPY"
+]
+ignore = [
+    "D102",  # Inheriting docstrings is allowed
+    "D107",  # Initializer goes in the class docstring
+    "D401",  # "Imperative mood" NLP doesn't always make sense
+    "D413",  # No blank lines after section is preferred by mkdocstrings
+
+    # Must pick one...
+    "D213",  # Pick 'multi-line-summary-first-line'.
+    "D203",  # Pick `no-blank-line-before-class`.
+]
+
+
 # Use pytorch-cpu when we install the `testing` extra, but pytorch-gpu when
 # we install the `torch` extra.
 [tool.uv]
 conflicts = [
     [
-        { extra = "testing" },
+        { extra = "dev" },
         { extra = "torch" },
     ],
 ]
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cpu", extra = "testing" },
+    { index = "pytorch-cpu", extra = "dev" },
 ]
 
 [[tool.uv.index]]
