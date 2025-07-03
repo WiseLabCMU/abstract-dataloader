@@ -21,10 +21,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
         uv-version: latest
 
+    - name: Lint with ruff
+      run: |
+        uv run --extra dev ruff check
+
     - name: Type check with pyright
       run: |
-        uv run --extra testing pyright
+        uv run --extra dev pyright
 
     - name: Test on python ${{ matrix.python-version }} and generate coverage
       run: |
-        uv run --extra testing pytest -ra --cov --cov-report=html --cov-report=term -- tests
+        uv run --extra dev pytest -ra --cov --cov-report=html --cov-report=term -- tests
