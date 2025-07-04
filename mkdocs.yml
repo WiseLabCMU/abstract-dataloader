@@ -15,6 +15,7 @@ nav:
     - Abstract: abstract.md
     - Generic: generic.md
     - Torch: torch.md
+    - Extensions: extensions.md
 
 extra_css:
   - stylesheets/extra.css
