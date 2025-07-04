@@ -6,7 +6,8 @@ nav:
   - Programming Model:
     - Data Loading: dataloader.md
     - Data Transforms: transforms.md
-  - User Guide:
+  # - User's Guide: tutorial.md
+  - Developer's Guide:
     - Usage: guide.md
     - Verification: verification.md
     - Type Systems: types.md
@@ -31,8 +32,24 @@ theme:
     - navigation.instant
     - navigation.expand
   palette:
+  - media: "(prefers-color-scheme)"
+    toggle:
+      icon: material/brightness-auto
+      name: Switch to light mode
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
     primary: purple
     accent: deep purple
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: purple
+    accent: deep purple
+    toggle:
+      icon: material/weather-night
+      name: Switch to system preference
 
 plugins:
 - search
