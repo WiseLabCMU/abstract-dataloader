@@ -39,11 +39,16 @@ modified to subclass `nn.Module` in order to properly register them.
 # Reimports to expose the same interface as `generic`.
 from abstract_dataloader.generic import Empty, Metadata, Nearest, Next, Window
 
-from .generic import ComposedPipeline, ParallelPipelines, SequencePipeline
+from .generic import (
+    ComposedPipeline,
+    ParallelPipelines,
+    ParallelTransforms,
+    SequencePipeline,
+)
 from .torch import Collate, StackedSequencePipeline, TransformedDataset
 
 __all__ = [
-    "ComposedPipeline", "ParallelPipelines",
+    "ComposedPipeline", "ParallelPipelines", "ParallelTransforms",
     "Metadata", "SequencePipeline", "Window",
     "Empty", "Nearest", "Next",
     # Pytorch-specific Components
