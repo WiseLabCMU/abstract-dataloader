@@ -48,6 +48,21 @@ def test_next(reference):
         assert np.all(np.diff(v) >= 0)
 
 
+def test_next_margin():
+    """generic.Next, with margin."""
+    ts = _make_timestamps()
+
+    sync = generic.Next("sensor1", margin=(1, 1))
+    indices = sync(ts)
+    assert indices["sensor1"].shape[0] == 1
+    assert np.allclose(indices["sensor1"], [2])
+
+    sync2 = generic.Next("sensor1", margin=(0.1, 1.1))
+    indices = sync2(ts)
+    assert indices["sensor1"].shape[0] == 1
+    assert np.allclose(indices["sensor1"], [2])
+
+
 def test_next_missing():
     """generic.Next, missing reference."""
     sync = generic.Next(reference="sensorX")
@@ -85,3 +100,18 @@ def test_nearest_bounds():
     """generic.Nearest; invalid tol."""
     with pytest.raises(ValueError):
         sync = generic.Nearest(reference="sensorX", tol=-0.5)  # noqa
+
+
+def test_nearest_margin():
+    """generic.Nearest, with margin."""
+    ts = _make_timestamps()
+
+    sync = generic.Nearest("sensor1", tol=1.0, margin=(1, 1))
+    indices = sync(ts)
+    assert indices["sensor1"].shape[0] == 4
+    assert np.allclose(indices["sensor1"], [1, 2, 3, 4])
+
+    sync2 = generic.Nearest("sensor1", tol=1.0, margin=(0.1, 1.1))
+    indices = sync2(ts)
+    assert indices["sensor1"].shape[0] == 3
+    assert np.allclose(indices["sensor1"], [1, 2, 3])
