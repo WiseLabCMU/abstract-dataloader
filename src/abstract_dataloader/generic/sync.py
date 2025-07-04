@@ -113,7 +113,7 @@ class Nearest(spec.Synchronization):
         tol: synchronization time tolerance, in seconds. Setting `tol = np.inf`
             works to disable this check altogether.
         margin: time margin (in seconds; `float`) or index margin
-            (in samples; `int`) to apply to the start end end time relative to
+            (in samples; `int`) to apply to the start and end time relative to
             the reference sensor, excluding samples within this margin.
     """
 
