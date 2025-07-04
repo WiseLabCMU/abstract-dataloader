@@ -43,6 +43,27 @@ def test_window(parallel):
     assert np.all(windowed.metadata.timestamps == np.array([1, 2, 3]))
 
 
+@pytest.mark.parametrize("parallel", [None, 1, 2])
+def test_window_uncropped(parallel) -> None:
+    """Test uncropped windowing."""
+    meta = _ConcreteMetadata(5)
+
+    partialed = generic.Window.from_partial_sensor(
+        lambda path: _ConcreteSensor(meta),
+        past=1, future=1, crop=False, parallel=parallel)
+    windowed = partialed("ignored")
+
+    assert windowed[1] == [0, 1, 2]
+    assert windowed[2] == [1, 2, 3]
+    assert windowed[3] == [2, 3, 4]
+    assert np.all(windowed.metadata.timestamps == np.array([0, 1, 2, 3, 4]))
+
+    with pytest.raises(IndexError):
+        _ = windowed[0]
+    with pytest.raises(IndexError):
+        _ = windowed[4]
+
+
 def test_transform():
     """Test sequence transforms."""
     pipeline = abstract.Pipeline(

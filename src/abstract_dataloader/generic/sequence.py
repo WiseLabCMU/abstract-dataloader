@@ -49,6 +49,14 @@ class Window(
                                 # timestamp for synchronization
     ```
 
+    Type Parameters:
+        - `SampleStack`: a collated series of consecutive samples. Can simply be
+            `list[Sample]`.
+        - `Sample`: single observation sample type.
+        - `TMetadata`: metadata type for the underlying sensor. Note that the
+            `Window` wrapper doesn't actually have metadata type `TMetadata`;
+            this type is just passed through from the sensor which is wrapped.
+
     Args:
         sensor: sensor to wrap.
         collate_fn: collate function for aggregating a list of samples; if not
@@ -57,22 +65,17 @@ class Window(
             to `0` to disable.
         future: number of future samples, in addition to the current sample.
             Set to `0` to disable.
+        crop: if `True`, crop the first `past` and last `future` samples in
+            the reported metadata to ensure that all samples are fully valid.
         parallel: maximum number of samples to load in parallel; if `None`, all
             samples are loaded sequentially.
-
-    Type Parameters:
-        - `SampleStack`: a collated series of consecutive samples. Can simply be
-            `list[Sample]`.
-        - `Sample`: single observation sample type.
-        - `TMetadata`: metadata type for the underlying sensor. Note that the
-            `Window` wrapper doesn't actually have metadata type `TMetadata`;
-            this type is just passed through from the sensor which is wrapped.
     """
 
     def __init__(
         self, sensor: spec.Sensor[Sample, TMetadata],
         collate_fn: Callable[[list[Sample]], SampleStack] | None = None,
-        past: int = 0, future: int = 0, parallel: int | None = None
+        past: int = 0, future: int = 0, crop: bool = True,
+        parallel: int | None = None
     ) -> None:
         self.sensor = sensor
         self.past = past
@@ -84,16 +87,21 @@ class Window(
                 Callable[[list[Sample]], SampleStack], lambda x: x)
         self.collate_fn = collate_fn
 
-        # hack for negative indexing
-        _future = None if future == 0 else -future
-        self.metadata = Metadata(
-            timestamps=sensor.metadata.timestamps[past:_future])
+        self.cropped = crop
+        if crop:
+            # hack for negative indexing
+            _future = None if future == 0 else -future
+            self.metadata = Metadata(
+                timestamps=sensor.metadata.timestamps[past:_future])
+        else:
+            self.metadata = Metadata(timestamps=sensor.metadata.timestamps)
 
     @classmethod
     def from_partial_sensor(
         cls, sensor: Callable[[str], spec.Sensor[Sample, TMetadata]],
         collate_fn: Callable[[list[Sample]], SampleStack] | None = None,
-        past: int = 0, future: int = 0, parallel: int | None = None
+        past: int = 0, future: int = 0, crop: bool = True,
+        parallel: int | None = None
     ) -> Callable[[str], "Window[SampleStack, Sample, TMetadata]"]:
         """Partially initialize from partially initialized sensor.
 
@@ -118,6 +126,9 @@ class Window(
                 Set to `0` to disable.
             future: number of future samples, in addition to the current
                 sample. Set to `0` to disable.
+            crop: if `True`, crop the first `past` and last `future` samples in
+                the reported metadata to ensure that all samples are full
+                valid.
             parallel: maximum number of samples to load in parallel; if `None`,
                 all samples are loaded sequentially.
         """
@@ -126,24 +137,42 @@ class Window(
         ) -> Window[SampleStack, Sample, TMetadata]:
             return cls(
                 sensor(path), collate_fn=collate_fn, past=past,
-                future=future, parallel=parallel)
+                future=future, crop=crop, parallel=parallel)
 
         return create_wrapped_sensor
 
     def __getitem__(self, index: int | np.integer) -> SampleStack:
         """Fetch measurements from this sensor, by index.
 
+        !!! warning
+
+            Note that `past` samples are lost at the beginning, and `future`
+            samples at the end to account for the window size!
+
+            If `crop=True`, these lost samples are taken into account by the
+            `Window` wrapper; if `crop=False`, the caller must handle this.
+
         Args:
-            index: sample index; note that `past` samples are lost at the
-                beginning, and `future` at the end to account for the window
-                size.
+            index: sample index.
 
         Returns:
             A set of `past + 1 + future` consecutives samples. Note that there
                 is a `past` offset of indices between the wrapped `Window` and
                 the underlying sensor!
+
+        Raises:
+            IndexError: if `crop=False`, and the requested index is out of
+                bounds (i.e., in the first `past` or last `future` samples).
         """
-        window = list(range(index, index + self.past + self.future + 1))
+        if self.cropped:
+            window = list(range(index, index + self.past + self.future + 1))
+        else:
+            window = list(range(index - self.past, index + self.future + 1))
+
+        if window[0] < 0 or window[-1] >= len(self.sensor):
+            raise IndexError(
+                f"Requested invalid index {index} for uncropped "
+                f"Window(past={self.past}, future={self.future}).")
 
         if self.parallel is not None:
             with ThreadPool(min(len(window), self.parallel)) as p:
