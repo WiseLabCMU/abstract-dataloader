@@ -15,7 +15,13 @@ nav:
     - Abstract: abstract.md
     - Generic: generic.md
     - Torch: torch.md
-    - Extensions: extensions.md
+  - Extensions:
+    - ADL Extensions: extensions/index.md
+    - Augmentations: extensions/augment.md
+    - Lightning: extensions/lightning.md
+    - Objectives: extensions/objective.md
+    - Sampling: extensions/sample.md
+    - Types: extensions/types.md
 
 extra_css:
   - stylesheets/extra.css

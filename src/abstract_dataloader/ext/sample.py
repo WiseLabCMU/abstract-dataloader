@@ -1,9 +1,9 @@
 """Dataset sampling, including a low discrepancy subset sampler."""
 
-from typing import Generic, Literal, TypeVar
+from typing import Callable, Generic, Literal, TypeVar
 
 import numpy as np
-from jaxtyping import Int64
+from jaxtyping import Int64, Integer
 
 from abstract_dataloader import spec
 
@@ -20,6 +20,8 @@ class SampledDataset(spec.Dataset[TSample], Generic[TSample]):
       by multiplying by `len(dataset)` and rounding.
     - `ld`: Low discrepancy sampling; see [`sample_ld`][^.].
     - `uniform`: Uniformly spaced sampling, with `linspace(0, n, samples)`.
+    - `Callable`: A callable which takes the total number of samples, and
+        returns an array of indices to sample from the dataset.
 
     !!! info
 
@@ -40,7 +42,9 @@ class SampledDataset(spec.Dataset[TSample], Generic[TSample]):
 
     def __init__(
         self, dataset: spec.Dataset[TSample], samples: int | float,
-        seed: int | float = 0, mode: Literal["ld", "uniform", "random"] = "ld"
+        seed: int | float = 0,
+        mode: Literal["ld", "uniform", "random"]
+            | Callable[[int], Integer[np.ndarray, "N"]] = "ld"
     ) -> None:
         self.dataset = dataset
 
@@ -54,8 +58,10 @@ class SampledDataset(spec.Dataset[TSample], Generic[TSample]):
                 seed = int(seed * len(dataset))
             self.subset = np.random.default_rng(seed).choice(
                 len(dataset), size=samples, replace=True)
-        else:
+        elif mode == "uniform":
             self.subset = np.linspace(0, len(dataset), samples, dtype=np.int64)
+        else:  # Callable
+            self.subset = mode(len(dataset)).astype(np.int64)
 
     def __getitem__(self, index: int | np.integer) -> TSample:
         """Fetch item from this dataset by global index."""

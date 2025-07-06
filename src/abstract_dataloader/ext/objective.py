@@ -18,19 +18,8 @@ import numpy as np
 from jaxtyping import Float, UInt8
 from typing_extensions import TypeVar
 
+from .types import TArray
 
-@runtime_checkable
-class ArrayLike(Protocol):
-    """Array with shape and dtype, e.g., `torch.Tensor`, `jax.Array`."""
-
-    @property
-    def shape(self) -> tuple[int, ...]: ...
-
-    @property
-    def dtype(self) -> Any: ...
-
-
-TArray = TypeVar("TArray", bound=ArrayLike)
 YTrue = TypeVar("YTrue", infer_variance=True)
 YPred = TypeVar("YPred", infer_variance=True)
 
