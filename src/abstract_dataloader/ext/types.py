@@ -7,8 +7,6 @@
     - Set each class as `Generic[TArray]`, where [`TArray`][.] is a `TypeVar`
         which is [`ArrayLike`][.], e.g., `torch.Tensor`, `jax.Array` or
         `np.ndarray`.
-    - Outer data types are [`Timestamped`][.] with a leading batch timestamp
-        field.
 
 !!! warning
 
@@ -18,13 +16,11 @@
 from dataclasses import field
 from typing import (
     Any,
-    Generic,
     Protocol,
     TypeVar,
     runtime_checkable,
 )
 
-from jaxtyping import Float
 from optree.dataclasses import dataclass as _optree_dataclass
 from typing_extensions import dataclass_transform
 
@@ -51,16 +47,3 @@ class ArrayLike(Protocol):
 
 TArray = TypeVar("TArray", bound=ArrayLike)
 """Type variable for [`ArrayLike`][^.] types."""
-
-
-@runtime_checkable
-class Timestamped(Protocol, Generic[TArray]):
-    """Data type with a timestamp.
-
-    Attributes:
-        timestamps: data timestamps; batch must be the leading axis, but the
-            `timestamps` can have an extra `window` axis if each sample
-            represents a sequence of frames.
-    """
-
-    timestamps: Float[TArray, "batch *window"]

@@ -13,7 +13,7 @@ framework on various functionality.
     from abstract_dataloader.ext import sample
     ```
 
-!!! warning
+!!! info
 
     This module is not included in the test suite or CI, and is generally held
     to a lower standard than the core `abstract_dataloader`.
@@ -23,6 +23,8 @@ The current extension modules are:
 - [`augment`][.]: A protocol for specifying data augmentations.
 - [`graph`][.]: A programming model based on composing a DAG of callables
     into a single transform.
+- [`lightning`][.]: A lightning datamodule wrapper for ADL datasets and
+    pipelines.
 - [`objective`][.]: Standardized learning objectives, and a
     programming model for multi-objective learning.
 - [`sample`][.]: Dataset sampling utilities, including a low-discrepancy

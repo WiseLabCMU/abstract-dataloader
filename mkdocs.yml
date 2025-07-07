@@ -21,6 +21,7 @@ nav:
     - About: extensions/index.md
     - Augment: extensions/augment.md
     - Graph: extensions/graph.md
+    - Lightning: extensions/lightning.md
     - Objective: extensions/objective.md
     - Sampling: extensions/sample.md
     - Types: extensions/types.md

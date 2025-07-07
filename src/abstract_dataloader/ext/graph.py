@@ -91,8 +91,8 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
         determined, and result in runtime errors if invalid.
 
     Args:
-        outputs: list of output data keys to produce. If `None`, all values are
-            returned.
+        outputs: output data keys to produce as a mapping of output keys to
+            graph data keys. If `None`, all values are returned.
         keep_all: keep references to all intermediate values instead of
             decref-ing values which are no longer needed.
         nodes: nodes in the graph, as keyword arguments where the key indicates
@@ -101,7 +101,7 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
     """
 
     def __init__(
-        self, outputs: Sequence[str] | None = None, keep_all: bool = False,
+        self, outputs: Mapping[str, str] | None = None, keep_all: bool = False,
         **nodes: Node | dict[str, Any]
     ) -> None:
         self.nodes = {
@@ -156,4 +156,7 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
             else:
                 raise self._err_disconnected(data, incomplete)
 
-        return {k: data[k] for k in self.outputs} if self.outputs else data
+        if self.outputs is not None:
+            return {k: data[v] for k, v in self.outputs.items()}
+        else:
+            return data

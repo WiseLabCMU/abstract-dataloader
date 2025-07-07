@@ -53,7 +53,9 @@ dev = [
     "optree >= 0.13",
     "torch >= 2.2",
     "pyright >= 1.0.0",
-    "ruff >= 0.10.0"
+    "ruff >= 0.10.0",
+    # lightning extra: dev only - users should bring their own
+    "lightning >= 2.0.0",
 ]
 torch = [
     "optree >= 0.13",
