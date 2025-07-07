@@ -20,32 +20,16 @@ distributions:
 """
 
 import os
-from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Protocol, TypeVar
 
 import numpy as np
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 
-class Augmentation(ABC, Generic[T]):
+class Augmentation(Protocol, Generic[T]):
     """A generic augmentation random generation policy."""
 
-    def __init__(self) -> None:
-        self._rng = {}
-
-    @property
-    def rng(self) -> np.random.Generator:
-        """Random number generator, using the PID as a seed."""
-        pid = os.getpid()
-        if pid in self._rng:
-            return self._rng[pid]
-        else:
-            rng = np.random.default_rng(seed=pid)
-            self._rng[pid] = rng
-            return rng
-
-    @abstractmethod
-    def __call__(self) -> T:
+    def __call__(self, rng: np.random.Generator) -> T:
         """Sample the value of a data augmentation parameter."""
         ...
 
@@ -61,6 +45,18 @@ class Augmentations:
 
     def __init__(self, **kwargs: Augmentation) -> None:
         self.augmentations = kwargs
+        self._rng = {}
+
+    @property
+    def rng(self) -> np.random.Generator:
+        """Random number generator, using the PID as a seed."""
+        pid = os.getpid()
+        if pid in self._rng:
+            return self._rng[pid]
+        else:
+            rng = np.random.default_rng(seed=pid)
+            self._rng[pid] = rng
+            return rng
 
     def __call__(self, meta: dict[str, Any] = {}) -> dict[str, Any]:
         """Generate a dictionary of augmentations.
@@ -75,7 +71,7 @@ class Augmentations:
             Augmentation specifications.
         """
         if meta.get("train", True):
-            return {k: v() for k, v in self.augmentations.items()}
+            return {k: v(self.rng) for k, v in self.augmentations.items()}
         else:
             return {}
 
@@ -90,11 +86,10 @@ class Bernoulli(Augmentation[bool]):
     """
 
     def __init__(self, p: float = 0.5) -> None:
-        super().__init__()
         self.p = p
 
-    def __call__(self) -> bool:
-        return self.rng.random() < self.p
+    def __call__(self, rng: np.random.Generator) -> bool:
+        return rng.random() < self.p
 
 
 class Normal(Augmentation[float]):
@@ -108,15 +103,14 @@ class Normal(Augmentation[float]):
     """
 
     def __init__(self, p: float = 1.0, std: float = 1.0) -> None:
-        super().__init__()
         self.p = p
         self.std = std
 
-    def __call__(self) -> float:
-        if self.p < 1.0 and self.rng.random() > self.p:
+    def __call__(self, rng: np.random.Generator) -> float:
+        if self.p < 1.0 and rng.random() > self.p:
             return 0.0
 
-        return self.rng.normal(scale=self.std)
+        return rng.normal(scale=self.std)
 
 
 class TruncatedLogNormal(Augmentation[float]):
@@ -135,16 +129,15 @@ class TruncatedLogNormal(Augmentation[float]):
     def __init__(
         self, p: float = 1.0, std: float = 0.2, clip: float = 2.0
     ) -> None:
-        super().__init__()
         self.p = p
         self.std = std
         self.clip = clip
 
-    def __call__(self) -> float:
-        if self.p < 1.0 and self.rng.random() > self.p:
+    def __call__(self, rng: np.random.Generator) -> float:
+        if self.p < 1.0 and rng.random() > self.p:
             return 1.0
 
-        z = self.rng.normal()
+        z = rng.normal()
         if self.clip > 0:
             z = np.clip(z, -self.clip, self.clip)
         return np.exp(z * self.std)
@@ -169,8 +162,8 @@ class Uniform(Augmentation[float]):
         self.lower = lower
         self.upper = upper
 
-    def __call__(self) -> float:
-        if self.p < 1.0 and self.rng.random() > self.p:
+    def __call__(self, rng: np.random.Generator) -> float:
+        if self.p < 1.0 and rng.random() > self.p:
             return 0.0
 
-        return self.rng.uniform(self.lower, self.upper)
+        return rng.uniform(self.lower, self.upper)
