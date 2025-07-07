@@ -34,6 +34,7 @@ class Objective(Protocol, Generic[TArray, YTrue, YPred]):
         computed for non-loss metrics!
 
     Type Parameters:
+        - `TArray`: backend (`jax.Array`, `torch.Tensor`, etc.)
         - `YTrue`: ground truth data type.
         - `YPred`: model output data type.
     """

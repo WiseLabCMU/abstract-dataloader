@@ -13,7 +13,7 @@ PProcessed = TypeVar("PProcessed", bound=dict[str, Any])
 
 
 class ParallelTransforms(torch.nn.Module, spec.Transform[PRaw, PTransformed]):
-    """Compose multiple transforms, similar to [`ParallelPipelines`][.].
+    """Compose multiple transforms, similar to [`ParallelPipelines`][^.].
 
     Type Parameters:
         - `PRaw`, `PTransformed`, [`Transform`][abstract_dataloader.spec.].

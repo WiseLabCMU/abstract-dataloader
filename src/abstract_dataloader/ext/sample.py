@@ -1,4 +1,8 @@
-"""Dataset sampling, including a low discrepancy subset sampler."""
+"""Dataset sampling, including a low discrepancy subset sampler.
+
+Dataset sampling is implemented using a [`SampledDataset`][.],
+which transparently wraps an existing [`Dataset`][abstract_dataloader.spec.].
+"""
 
 from typing import Callable, Generic, Literal, TypeVar
 

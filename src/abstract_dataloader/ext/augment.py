@@ -1,80 +1,34 @@
-"""Data augmentation specifications.
+"""Abstract specifications for data augmentations.
 
 !!! abstract "Programming Model"
 
     - Data augmentations consist of a set of properties which correspond to
-        physical properties of the data, such as `azimuth_flip` or
-        `range_scale`.
+        common properties of the data, such as `azimuth_flip` or `range_scale`.
+    - The user is responsible for defining and keeping track of each
+        augmentation property and its meaning.
     - Multiple data augmentation specifications can be combined into a single
         set of `Augmentations`, which generates a dictionary of values.
+
+In addition to the general framework, we include wrappers for a few common
+distributions:
+
+- [`Bernoulli`][.]: `Bernoulli(p)`
+- [`Normal`][.]: `Normal(0, std) * Bernoulli(p)`
+- [`TruncatedLogNormal`][.]:
+    `exp(clamp(Normal(0, std), -clip, clip)) * Bernoulli(p))`
+- [`Uniform`][.]: `Unif(lower, upper) * Bernoulli(p)`
 """
 
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar, overload
+from typing import Any, Generic, TypeVar
 
 import numpy as np
 
-from abstract_dataloader import spec
-
-from .types import dataclass
-
 T = TypeVar("T")
-TNew = TypeVar("TNew")
-
-
-@dataclass
-class Augmented(Generic[T]):
-    """Data with augmentations applied.
-
-    Attributes:
-        data: wrapped data.
-        augmentations: remaining augmentations which have not been applied.
-    """
-
-    data: T
-    augmentations: dict[str, Any]
-
-    def pop(self, key: str, default: Any) -> Any:
-        """Pop an augmentation by key."""
-        return self.augmentations.pop(key, default)
-
-    def filter(self, *keys: str) -> "Augmented[T]":
-        """Filter augmentations by keys.
-
-        Args:
-            keys: keys to keep, i.e., augmentations which are relevant to this
-                pipeline.
-
-        Returns:
-            Filtered `Augmented` wrapper.
-        """
-        filtered = {
-            k: v for k, v in self.augmentations.items() if k in set(keys)}
-        return Augmented(data=self.data, augmentations=filtered)
-
-    def unbox(self) -> T:
-        """Unbox the data, returning the original data type.
-
-        !!! warning
-
-            If any un-applied augmentations are remaining, a `ValueError` is
-            raised. Augmentations which are not relevant to a particular data
-            type should be explicitly removed.
-        """
-        if len(self.augmentations) > 0:
-            raise ValueError(
-                f"Augmented[{type(self.data).__name__}] still has "
-                f"un-applied augmentations: {list(self.augmentations.keys())}")
-        return self.data
-
-    def update(self, data: TNew) -> "Augmented[TNew]":
-        """Update the data with a new value, keeping the augmentations."""
-        return Augmented(data=data, augmentations=self.augmentations)
-
 
 class Augmentation(ABC, Generic[T]):
-    """Data augmentation random generation policy."""
+    """A generic augmentation random generation policy."""
 
     def __init__(self) -> None:
         self._rng = {}
@@ -96,8 +50,8 @@ class Augmentation(ABC, Generic[T]):
         ...
 
 
-class Augment(spec.Transform[dict[str, Any], dict[str, Augmented[Any]]]):
-    """Collection of data augmentations.
+class Augmentations:
+    """A collection of data augmentations.
 
     Args:
         kwargs: augmentations to apply, where each key is the
@@ -108,64 +62,22 @@ class Augment(spec.Transform[dict[str, Any], dict[str, Augmented[Any]]]):
     def __init__(self, **kwargs: Augmentation) -> None:
         self.augmentations = kwargs
 
-    def sample(self) -> dict[str, Any]:
-        """Generate a dictionary of augmentations."""
-        return {k: v() for k, v in self.augmentations.items()}
+    def __call__(self, meta: dict[str, Any] = {}) -> dict[str, Any]:
+        """Generate a dictionary of augmentations.
 
-    def __call__(
-        self, data: dict[str, Any], train: bool = False
-    ) -> dict[str, Augmented[Any]]:
-        """Apply data augmentations to a collection of multimodal data."""
-        if train:
-            aug = self.sample()
+        If a `train=False` flag is passed in `meta`, no augmentations are
+        generated.
+
+        Args:
+            meta: data processing configuration inputs.
+
+        Returns:
+            Augmentation specifications.
+        """
+        if meta.get("train", True):
+            return {k: v() for k, v in self.augmentations.items()}
         else:
-            aug = {}
-
-        return {
-            k: Augmented(data=v, augmentations=aug.copy())
-            for k, v in data.items()
-        }
-
-
-TSample = TypeVar("TSample", bound=dict[str, Any])
-
-class Unbox:
-    """Alias for `.unbox`."""
-
-    @overload
-    def __call__(self, data: Augmented[TSample]) -> TSample: ...
-
-    @overload
-    def __call__(self, data: dict[str, Augmented]) -> dict[str, Any]: ...
-
-    def __call__(
-        self, data: Augmented[TSample] | dict[str, Augmented[Any]],
-        train: bool = False
-    ) -> TSample | dict[str, Any]:
-        """Unbox and raise if there are unapplied values."""
-        if isinstance(data, dict):
-            return {k: v.unbox() for k, v in data.items()}
-        else:
-            return data.unbox()
-
-
-TRaw = TypeVar("TRaw")
-TTransformed = TypeVar("TTransformed")
-
-class IgnoreAugmentations(
-    spec.Transform[Augmented[TRaw], Augmented[TTransformed]]
-):
-    """Pass through to a transform which does not use augmentations."""
-
-    def __init__(self, transform: spec.Transform[TRaw, TTransformed]) -> None:
-        self.transform = transform
-
-    def __call__(
-        self, data: Augmented[TRaw], train: bool = False
-    ) -> Augmented[TTransformed]:
-        return Augmented(
-            data=self.transform(data.data, train=train),
-            augmentations=data.augmentations)
+            return {}
 
 
 class Bernoulli(Augmentation[bool]):
@@ -183,6 +95,28 @@ class Bernoulli(Augmentation[bool]):
 
     def __call__(self) -> bool:
         return self.rng.random() < self.p
+
+
+class Normal(Augmentation[float]):
+    """Normal distribution.
+
+    Type: `float`; returns `0.0` if not enabled. Always zero-centered.
+
+    Args:
+        p: probability of enabling this augmentation (`True`).
+        std: standard deviation of the normal distribution.
+    """
+
+    def __init__(self, p: float = 1.0, std: float = 1.0) -> None:
+        super().__init__()
+        self.p = p
+        self.std = std
+
+    def __call__(self) -> float:
+        if self.p < 1.0 and self.rng.random() > self.p:
+            return 0.0
+
+        return self.rng.normal(scale=self.std)
 
 
 class TruncatedLogNormal(Augmentation[float]):
@@ -207,7 +141,7 @@ class TruncatedLogNormal(Augmentation[float]):
         self.clip = clip
 
     def __call__(self) -> float:
-        if self.rng.random() > self.p:
+        if self.p < 1.0 and self.rng.random() > self.p:
             return 1.0
 
         z = self.rng.normal()
@@ -236,7 +170,7 @@ class Uniform(Augmentation[float]):
         self.upper = upper
 
     def __call__(self) -> float:
-        if self.rng.random() > self.p:
+        if self.p < 1.0 and self.rng.random() > self.p:
             return 0.0
 
         return self.rng.uniform(self.lower, self.upper)

@@ -2,8 +2,11 @@
 
 !!! abstract "Programming Model"
 
-    - Types are dataclasses which are registered to the global optree namespace
-        using the provided [`dataclass`][.] decorator.
+    - Declare types as dataclasses using the provided [`dataclass`][.]
+        decorator, which registers them to the global optree namespace.
+    - Set each class as `Generic[TArray]`, where [`TArray`][.] is a `TypeVar`
+        which is [`ArrayLike`][.], e.g., `torch.Tensor`, `jax.Array` or
+        `np.ndarray`.
     - Outer data types are [`Timestamped`][.] with a leading batch timestamp
         field.
 
@@ -34,7 +37,7 @@ def dataclass(cls):  # noqa: D103
 
 @runtime_checkable
 class ArrayLike(Protocol):
-    """Array with shape and dtype, e.g., `torch.Tensor`, `jax.Array`.
+    """Array type, e.g., `torch.Tensor | jax.Array | np.ndarray`.
 
     Use this type to specify arbitrary array types.
     """
@@ -47,11 +50,12 @@ class ArrayLike(Protocol):
 
 
 TArray = TypeVar("TArray", bound=ArrayLike)
+"""Type variable for [`ArrayLike`][^.] types."""
 
 
 @runtime_checkable
 class Timestamped(Protocol, Generic[TArray]):
-    """Types which have a timestamp.
+    """Data type with a timestamp.
 
     Attributes:
         timestamps: data timestamps; batch must be the leading axis, but the
