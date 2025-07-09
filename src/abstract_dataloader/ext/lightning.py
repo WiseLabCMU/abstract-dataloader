@@ -16,6 +16,12 @@ The provided data module is based on the following assumptions:
 - In-training visualizations are always rendered from the same set of a
     relatively small number of samples taken from the validation set.
 - The same dataloader settings should be applied to all splits.
+
+!!! info
+
+    Only sample-to-sample (`.transform`) and sample-to-batch (`.collate`)
+    transforms are applied in the dataloader; the training loop is
+    responsible for applying batch-to-batch (`.forward`) transforms.
 """
 
 from functools import cache, cached_property, partial
@@ -52,11 +58,11 @@ class ADLDataModule(
         [expected by pytorch lightning](
         https://lightning.ai/docs/pytorch/stable/data/datamodule.html).
 
-    !!! warning
+    !!! note
 
-        Only sample-to-sample (`.transform`) and sample-to-batch (`.collate`)
-        transforms are applied in the dataloader; the training loop is
-        responsible for applying batch-to-batch (`.forward`) transforms.
+        The underlying (transformed) dataset is cached (i.e. the same
+        dataset object will be used on each call), but the dataloader
+        container is not.
 
     Type Parameters:
         - `Raw`: raw data loaded from the dataset.
@@ -166,10 +172,10 @@ class ADLDataModule(
     ) -> adl_torch.TransformedDataset[Raw, Transformed]:
         """Get dataset for a given split, with sample transformation applied.
 
-        !!! note
+        !!! info
 
-            If the `val` split is requested, and `val_subsample` is specified,
-            a subsample transform (via
+            If the a split is requested, and `subsample` is specified for that
+            split, a subsample transform (via
             [`SampledDataset`][abstract_dataloader.ext.sample.]) is also
             applied.
 
@@ -199,14 +205,7 @@ class ADLDataModule(
             dataset, transform=self.transforms.sample)
 
     def train_dataloader(self) -> DataLoader:
-        """Get training dataloader (`shuffle=True, drop_last=True`).
-
-        !!! note
-
-            The underlying (transformed) dataset is cached (i.e. the same
-            dataset object will be used on each call), but the dataloader
-            container is not.
-        """
+        """Get training dataloader (`shuffle=True, drop_last=True`)."""
         return DataLoader(
             self.dataset("train"), shuffle=True, drop_last=True,
             **self._dataloader_args)

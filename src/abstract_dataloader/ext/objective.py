@@ -4,24 +4,46 @@
 
     - An [`Objective`][.] is a callable which returns a (batched) scalar loss
       and a dictionary of metrics.
-    - Objectives can be combined into a higher-order objective which combines
-      their losses and aggregates their metrics ([`MultiObjective`][.]);
-      specify these objectives using a [`MultiObjectiveSpec`][.].
+    - Objectives can be combined into a higher-order objective,
+      [`MultiObjective`][.], which combines their losses and aggregates their
+      metrics; specify these objectives using a [`MultiObjectiveSpec`][.].
 """
 
 from abc import abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 
 import numpy as np
-from jaxtyping import Float, UInt8
+from jaxtyping import Float, Shaped, UInt8
 from typing_extensions import TypeVar
 
 from .types import TArray
 
 YTrue = TypeVar("YTrue", infer_variance=True)
 YPred = TypeVar("YPred", infer_variance=True)
+
+
+@dataclass(frozen=True)
+class VisualizationConfig:
+    """General-purpose visualization configuration.
+
+    Objectives which make use of this configuration may ignore the provided
+    values.
+
+    Attributes:
+        cols: number of columns to tile images for in-training visualizations.
+        width: width of each sample when rendered.
+        height: height of each sample when rendered.
+        cmaps: colormaps to use, where values correspond to the name of a
+            matplotlib colormap or a numpy array of enumerated RGB values.
+    """
+
+    cols: int = 8
+    width: int = 512
+    height: int = 256
+    cmaps: Mapping[
+        str, str | UInt8[np.ndarray, "N 3"]] = field(default_factory=dict)
 
 
 @runtime_checkable
@@ -46,8 +68,8 @@ class Objective(Protocol, Generic[TArray, YTrue, YPred]):
         """Training metrics implementation.
 
         Args:
-            y_true: Data channels (i.e. dataloader output).
-            y_pred: Model outputs.
+            y_true: data channels (i.e. dataloader output).
+            y_pred: model outputs.
             train: Whether in training mode (i.e. skip expensive metrics).
 
         Returns:
@@ -60,6 +82,8 @@ class Objective(Protocol, Generic[TArray, YTrue, YPred]):
     ) -> dict[str, UInt8[np.ndarray, "H W 3"]]:
         """Generate visualizations for each entry in a batch.
 
+        This method may return an empty dict.
+
         !!! note
 
             This method should be called only from a "detached" CPU thread so
@@ -68,13 +92,39 @@ class Objective(Protocol, Generic[TArray, YTrue, YPred]):
             implementations are free to use CPU-specific methods.
 
         Args:
-            y_true: Data channels (i.e., dataloader output).
-            y_pred: Model outputs.
+            y_true: data channels (i.e., dataloader output).
+            y_pred: model outputs.
 
         Returns:
             A dict, where each key is the name of a visualization, and the
                 value is a stack of RGB images in HWC order, detached from
                 Torch and sent to a numpy array.
+        """
+        ...
+
+    def render(
+        self, y_true: YTrue, y_pred: YPred, render_gt: bool = False
+    ) -> dict[str, Shaped[np.ndarray, "batch ..."]]:
+        """Render model outputs and/or ground truth for later analysis.
+
+        This method may return an empty dict.
+
+        ??? question "How does this differ from `visualizations`?"
+
+            Unlike `visualizations`, which is expected to return a single
+            RGB image per batch, `render` is:
+
+            - expected to return a unique rendered value per sample, and
+            - may have arbitrary types (as long as they are a numpy arrays).
+
+        Args:
+            y_true: data channels (i.e. dataloader output).
+            y_pred: model outputs.
+            render_gt: whether to render ground truth data.
+
+        Returns:
+            A dict, where each key is the name of a rendered output, and the
+                value is a numpy array of the rendered data (e.g., an image).
         """
         ...
 
@@ -217,16 +267,6 @@ class MultiObjective(Objective[TArray, YTrue, YPred]):
     def __call__(
         self, y_true: YTrue, y_pred: YPred, train: bool = True
     ) -> tuple[Float[TArray, "batch"], dict[str, Float[TArray, "batch"]]]:
-        """Calculate training metrics.
-
-        Args:
-            y_true: Data channels (i.e., dataloader output).
-            y_pred: Model outputs.
-            train: Whether in training mode (e.g., skip expensive metrics).
-
-        Returns:
-            A tuple containing the loss and a dict of metric values.
-        """
         loss = 0.
         metrics = {}
         for k, v in self.objectives.items():
@@ -244,24 +284,6 @@ class MultiObjective(Objective[TArray, YTrue, YPred]):
     def visualizations(
         self, y_true: YTrue, y_pred: YPred
     ) -> dict[str, UInt8[np.ndarray, "H W 3"]]:
-        """Generate visualizations for each entry in a batch.
-
-        !!! note
-
-            This method should be called only from a "detached" CPU thread so
-            as not to affect training throughput; the caller is responsible for
-            detaching gradients and sending the data to the CPU. As such,
-            implementations are free to use CPU-specific methods.
-
-        Args:
-            y_true: Data channels (i.e. dataloader output).
-            y_pred: Model outputs.
-
-        Returns:
-            A dict, where each key is the name of a visualization, and the
-                value is a stack of RGB images in HWC order, detached from
-                Torch and sent to a numpy array.
-        """
         images = {}
         for k, v in self.objectives.items():
             k_images = v.objective.visualizations(
@@ -269,3 +291,15 @@ class MultiObjective(Objective[TArray, YTrue, YPred]):
             for name, image in k_images.items():
                 images[f"{k}/{name}"] = image
         return images
+
+    def render(
+        self, y_true: YTrue, y_pred: YPred, render_gt: bool = False
+    ) -> dict[str, Shaped[np.ndarray, "batch ..."]]:
+        rendered = {}
+        for k, v in self.objectives.items():
+            k_rendered = v.objective.render(
+                v.index_y_true(y_true), v.index_y_pred(y_pred),
+                render_gt=render_gt)
+            for name, image in k_rendered.items():
+                rendered[f"{k}/{name}"] = image
+        return rendered
