@@ -24,6 +24,7 @@ class ParallelTransforms(torch.nn.Module, spec.Transform[PRaw, PTransformed]):
     """
 
     def __init__(self, **transforms: spec.Transform) -> None:
+        super().__init__()
         self.transforms = transforms
         self._transforms = torch.nn.ModuleDict({
             k: v for k, v in transforms.items()

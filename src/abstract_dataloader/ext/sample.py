@@ -63,7 +63,8 @@ class SampledDataset(spec.Dataset[TSample], Generic[TSample]):
             self.subset = np.random.default_rng(seed).choice(
                 len(dataset), size=samples, replace=True)
         elif mode == "uniform":
-            self.subset = np.linspace(0, len(dataset), samples, dtype=np.int64)
+            self.subset = np.linspace(
+                0, len(dataset) - 1, samples, dtype=np.int64)
         else:  # Callable
             self.subset = mode(len(dataset)).astype(np.int64)
 
