@@ -12,14 +12,38 @@ PCollated = TypeVar("PCollated", bound=dict[str, Any])
 PProcessed = TypeVar("PProcessed", bound=dict[str, Any])
 
 
+class ParallelTransforms(torch.nn.Module, spec.Transform[PRaw, PTransformed]):
+    """Compose multiple transforms, similar to [`ParallelPipelines`][^.].
+
+    Type Parameters:
+        - `PRaw`, `PTransformed`, [`Transform`][abstract_dataloader.spec.].
+
+    Args:
+        transforms: transforms to compose. The key indicates the subkey to
+            apply each transform to.
+    """
+
+    def __init__(self, **transforms: spec.Transform) -> None:
+        super().__init__()
+        self.transforms = transforms
+        self._transforms = torch.nn.ModuleDict({
+            k: v for k, v in transforms.items()
+            if isinstance(v, torch.nn.Module)})
+
+    def __call__(self, data: PRaw) -> PTransformed:
+        return cast(
+            PTransformed,
+            {k: v(data[k]) for k, v in self.transforms.items()})
+
+
 class ParallelPipelines(
     torch.nn.Module,
     generic.ParallelPipelines[PRaw, PTransformed, PCollated, PProcessed]
 ):
     """Transform Compositions, modified for Pytorch compatibility.
 
-    Any [`nn.Module`][?torch.] transforms are registered to a separate
-    [`nn.ModuleDict`][?torch.]; the original `.transforms` attribute is
+    Any [`nn.Module`][torch.] transforms are registered to a separate
+    [`nn.ModuleDict`][torch.]; the original `.transforms` attribute is
     maintained with references to the full pipeline.
 
     See [`generic.ParallelPipelines`][abstract_dataloader.]

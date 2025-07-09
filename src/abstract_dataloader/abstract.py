@@ -42,11 +42,7 @@ import numpy as np
 from jaxtyping import Int64, Integer
 
 from . import spec
-from .spec import (
-    Collate,
-    Metadata,
-    Synchronization,
-)
+from .spec import Metadata, Synchronization
 
 __all__ = [
     "Dataset", "Metadata", "Sensor", "Synchronization", "Trace", "Pipeline",
@@ -374,6 +370,26 @@ class Transform(spec.Transform[TRaw, TTransformed]):
         return cast(TTransformed, data)
 
 
+class Collate(spec.Collate[TTransformed, TCollated]):
+    """Data collation.
+
+    Type Parameters:
+        - `TTransformed`: Input data type.
+        - `TCollated`: Output data type.
+    """
+
+    def __call__(self, data: Sequence[TTransformed]) -> TCollated:
+        """Collate a set of samples.
+
+        Args:
+            data: A set of `TTransformed` samples.
+
+        Returns:
+            A `TCollated` batch.
+        """
+        return cast(TCollated, data)
+
+
 class Pipeline(
     spec.Pipeline[TRaw, TTransformed, TCollated, TProcessed]
 ):
@@ -450,7 +466,7 @@ class Pipeline(
         Returns:
             A `TCollated` collection of the input sequence.
         """
-        raise NotImplementedError()
+        return cast(TCollated, data)
 
     def batch(self, data: TCollated) -> TProcessed:
         """Transform data batch.
