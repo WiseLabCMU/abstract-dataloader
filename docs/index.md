@@ -7,6 +7,11 @@
 [![CI](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/ci.yml/badge.svg)](https://github.com/WiseLabCMU/abstract-dataloader/actions/workflows/ci.yml)
 ![GitHub issues](https://img.shields.io/github/issues/WiseLabCMU/abstract-dataloader)
 
+<div class="grid cards" markdown>
+
+</div>
+
+
 ## What is the Abstract Dataloader?
 
 ??? question "Why Abstract?"
@@ -22,15 +27,7 @@
 
 The **abstract dataloader** (ADL) is a minimalist [specification][abstract_dataloader.spec] for creating composable and interoperable dataloaders and data transformations, along with [abstract template implementations][abstract_dataloader.abstract] and reusable [generic components][abstract_dataloader.generic], including a [pytorch interface][abstract_dataloader.torch].
 
-```
-Metadata─────────────────┐
-   │                     ▼
-   └────►Sensor   Synchronization
-           │             │
-           └────►Trace◄──┘
-                   │
-                   └────►Dataset───►Transform
-```
+![Abstract Dataloader Overview](./diagrams/overview.svg)
 
 The ADL's specifications and bundled implementations lean heavily on generic type annotations in order to enable type checking using static type checkers such as [mypy](https://mypy-lang.org/) or [pyright](https://microsoft.github.io/pyright/) and runtime (dynamic) type checkers such as [beartype](https://github.com/beartype/beartype) and [typeguard](https://github.com/agronholm/typeguard), even when applying functor-like generic transforms such as [sequence loading][abstract_dataloader.generic.Window] and [transforms][abstract_dataloader.generic.SequencePipeline].
 
@@ -40,9 +37,7 @@ The ADL's specifications and bundled implementations lean heavily on generic typ
 
 !!! info "Type Checking is Optional"
 
-    While most of the non-documentation code in this library goes towards facilitating type checking of the abstract dataloader specifications, static and runtime type checking are fully optional, in line with Python's gradual typing paradigm.
-
-    Users also do not need to fully define the abstract dataloader's typed interfaces. For example, specifying a [`Sensor`][abstract_dataloader.spec.Sensor] instead of a `Sensor[TData, TMetadata]` is perfectly valid, as type checkers will simply interpret the sensor as loading `Any` data and accepting `Any` metadata.
+    Static and runtime type checking are fully optional, in line with Python's gradual typing paradigm. Users also do not need to fully define the abstract dataloader's typed interfaces: for example, specifying a [`Sensor`][abstract_dataloader.spec.Sensor] instead of a `Sensor[TData, TMetadata]` is perfectly valid, as type checkers will simply interpret the sensor as loading `Any` data and accepting `Any` metadata.
 
 ## Setup
 

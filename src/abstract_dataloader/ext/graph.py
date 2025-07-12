@@ -33,7 +33,7 @@ class Node:
         ```
 
     Attributes:
-        callable: callable to apply to the inputs.
+        transform: callable to apply to the inputs.
         output: output data key (or output data keys for a node which returns
             multiple outputs).
         inputs: mapping of data keys to input argument names.
