@@ -16,17 +16,7 @@ Multimodal datasets generally operate using the following pattern:
 
 To implement a dataloader specification based on this common pattern, we start from a dataset, trace, and sensor-based architecture:
 
-``` 
-┌─────────────────────────────────────────────────────────────┐
-│Dataset                                                      │
-│┌─────────────────────────┐┌─────────────────────────┐       │
-││Trace 1                  ││Trace 2                  │       │
-││┌────────┐┌────────┐     ││┌────────┐┌────────┐     │       │
-│││Sensor 1││Sensor 2│ ... │││Sensor 1││Sensor 2│ ... │  ...  │
-││└────────┘└────────┘     ││└────────┘└────────┘     │       │
-│└─────────────────────────┘└─────────────────────────┘       │
-└─────────────────────────────────────────────────────────────┘
-```
+![Dataloader Programming Model](diagrams/programming-model.svg)
 
 - A [`Sensor`][abstract_dataloader.spec.Sensor] consists of all of the data recorded by a given modality in a single recording, with a modality being defined by one or possibly multiple feature streams which make sense to be loaded together. The [`Sensor`][abstract_dataloader.spec.Sensor] keeps track of its own metadata, and has some way of loading the underlying data; the data also expected to be a single synchronous time series.
 - Multiple [`Sensor`][abstract_dataloader.spec.Sensor] streams are recorded simultaneously to make up a [`Trace`][abstract_dataloader.spec.Trace], which in turn has some way of loading data across its constituent sensors.
@@ -38,28 +28,7 @@ Next, we address time synchronization between sensor streams which are "asynchro
 
 At a high level, all approaches for dealing with asynchronous time series data can be abstracted as an algorithm which takes asynchronous time stamps in, and returns instructions for how to load synchronized samples. We define this procedure using a [`Synchronization`][abstract_dataloader.spec.Synchronization] spec, which maps global trace indices to sensor indices:
 
-``` 
-┌─────────────────────────────────────────────────────────┐
-│Trace: Map[int -> multimodal sample]                     │
-│┌───────────────────────┐┌───────────────────────┐       │
-││Sensor 1               ││Sensor 2               │       │
-││┌─────────────────────┐││┌─────────────────────┐│       │
-│││Metadata             ││││Metadata             ││       │
-│││┌──────────────┐     ││││┌──────────────┐     ││       │
-││││Timestamps:f64│ ... │││││Timestamps:f64│ ... ││  ...  │
-│││└──────┬───────┘     ││││└──────┬───────┘     ││       │
-││└───────┼─────────────┘││└───────┼─────────────┘│       │
-│└────────┼──────────────┘└────────┼──────────────┘       │
-│         ▼                        ▼                      │
-│┌───────────────────────────────────────────────────────┐│
-││                    Synchronization                    ││
-│└────────┬────────────────────────┬─────────────────────┘│
-│         ▼                        ▼                      │
-│┌───────────────────────┐┌───────────────────────┐       │
-││Index: trace -> sensor ││Index: trace -> sensor │       │
-│└───────────────────────┘└───────────────────────┘       │
-└─────────────────────────────────────────────────────────┘
-```
+![Time Synchronization Programming Model](diagrams/time-synchronization.svg)
 
 !!! info "Trace Indexing"
 
@@ -74,23 +43,7 @@ At a high level, all approaches for dealing with asynchronous time series data c
 
 One of the downsides of our `dataset => trace => sensor` hierarchy is the need to implement global (dataset) to local (trace) index translation, which is not needed in monolithic dataloaders.
 
-``` 
-              index
-                │
-┌───────────────┼────────────────┐
-│Dataset        ▼                │
-│┌──────────────────────────────┐│
-││          Index Map           ││
-│└───┬────────┬─────────────┬───┘│
-│    ▼?       ▼?            ▼?   │
-│┌───────┐┌───────┐     ┌───────┐│
-││Trace 1││Trace 2│ ... │Trace N││
-│└───┬───┘└───┬───┘     └───┬───┘│
-└────┼────────┼─────────────┼────┘
-     └────────┴─┬───────────┘
-                ▼
-              sample
-```
+![Trace Indexing](diagrams/indexing.svg)
 
 Fortunately, aside from a negligible performance overhead, in addition to presenting a cleaner abstraction, this approach provides substantial memory advantages:
 

@@ -56,22 +56,7 @@ class Collate(Protocol, Generic[TTransformed, TCollated]):
 
 A typical data processing pipeline consists of a CPU-side transform, a batching function, and a GPU-side transform. We formalize this using a [`Pipeline`][abstract_dataloader.spec.Pipeline], which collects these three components together into a generically typed container:
 
-``` 
-Pipeline
-       .sample       .collate      .batch
-┌──────┐      ┌──────┐    . ┌─────┐      ┌─────┐
-│Sample├─────►│Sample├──┐ . │     │      │     │
-└──────┘      └──────┘  │ . │     │      │     │
-┌──────┐      ┌──────┐  │ . │     │      │     │
-│Sample├─────►│Sample├──┤ . │     │      │     │
-└──────┘      └──────┘  ├──►│Batch├─────►│Batch│
-  ...           ...     │ . │     │      │     │
-                        │ . │     │      │     │
-┌──────┐      ┌──────┐  │ . │     │      │     │
-│Sample├─────►│Sample├──┘ . │     │      │     │
-└──────┘      └──────┘    . └─────┘      └─────┘
-                     CPU◄───►GPU
-```
+![Data preprocessing programming model](diagrams/pipeline.svg)
 
 - [`Pipeline.sample`][abstract_dataloader.spec.Pipeline.sample]: apply some transform to a single sample, returning another single sample. This represents most common dataloader operations, e.g. data augmentations, point cloud processing, and nominally occurs on the CPU.
 - [`Pipeline.collate`][abstract_dataloader.spec.Pipeline.collate]: combine multiple samples into a "batch" which facilitates vectorized processing.
@@ -83,7 +68,7 @@ Pipeline
     
     Implementations may also be `.sample`/`.batch`-generic, for example using overloaded operators only, operating on pytorch `cpu` and `cuda` tensors, or having a `numpy`/`pytorch` switch. As such, we leave distinguishing `.sample` and `.batch` transforms up to the user.
 
-!!! composition rules
+!!! composition-rules
 
     Since they contain a [`Collate`][abstract_dataloader.spec.Collate] step, [`Pipeline`][abstract_dataloader.spec.Pipeline]s may not be sequentially composed. Again, like all transforms, they can be [composed "in parallel"][abstract_dataloader.generic.ParallelPipelines] by routing different parts of a data structure to different `Collate` implementations.
 
