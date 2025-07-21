@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 
 import numpy as np
+import wadler_lindig as wl
 from jaxtyping import Float, Shaped, UInt8
 from typing_extensions import TypeVar
 
@@ -183,13 +184,13 @@ class MultiObjectiveSpec(Generic[YTrue, YPred, YTrueAll, YPredAll]):
                     return obj[k]
                 except KeyError as e:
                     raise KeyError(
-                        f"Key {k} not found: {obj}") from e
+                        f"Key {k} not found: {wl.pformat(obj)}") from e
             else:
                 try:
                     return getattr(obj, k)
                 except AttributeError as e:
                     raise AttributeError(
-                        f"Attribute {k} not found: {obj}") from e
+                        f"Attribute {k} not found: {wl.pformat(obj)}") from e
 
         if isinstance(key, str):
             return dereference(data, key)
