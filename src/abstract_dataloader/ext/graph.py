@@ -12,6 +12,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping, Sequence
 
+import wadler_lindig as wl
+
 from abstract_dataloader import spec
 
 
@@ -69,11 +71,12 @@ class Node:
                 raise ValueError(
                     f"Node '{name}' output length mismatch: expected "
                     f"{len(self.output)} outputs ({self.output}), but got "
-                    f"{len(output)} outputs:\n{output}\n")
+                    f"{len(output)} outputs:\n{wl.pformat(output)}\n")
             if not isinstance(output, Sequence):
                 raise TypeError(
                     f"Node '{name}' output is expected to be a sequence due "
-                    f"to output specification {self.output}: \n{output}\n")
+                    f"to output specification {self.output}: "
+                    f"\n{wl.pformat(output)}\n")
 
             for o, v in zip(self.output, output):
                 data[o] = v
@@ -119,7 +122,7 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
             f"There are {len(incomplete)} nodes remaining, but "
             f"all remaining nodes have at least one missing input.\n"
             f"Current inputs: {list(data.keys())}\n"
-            f"Remaining stage requirements: {remaining}")
+            f"Remaining stage requirements: {wl.pformat(remaining)}")
 
     def _decref(
         self, data: dict[str, Any], incomplete: dict[str, Node]
