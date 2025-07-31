@@ -63,9 +63,9 @@ Dataloaders may or may not come with data a preprocessing [`Pipeline`][abstract_
 If a library comes with a complete, ready-to-use `Pipeline`, then all that remains is to apply the pipeline:
 
 ```python
-def apply_pipeline(indices, dataset, pipeline):
+def apply_pipeline(indices: Sequence[int], dataset: Dataset, pipeline: Pipeline):
     raw = [dataset[i] for i in indices]
-    transformed = [pipeline.batch(x) for x in raw]
+    transformed = [pipeline.sample(x) for x in raw]
     collated = pipeline.collate(transformed)
     processed = pipeline.batch(collated)
     return processed
