@@ -4,7 +4,8 @@ Dataset sampling is implemented using a [`SampledDataset`][.],
 which transparently wraps an existing [`Dataset`][abstract_dataloader.spec.].
 """
 
-from typing import Callable, Generic, Literal, TypeVar
+from collections.abc import Callable, Iterable, Iterator
+from typing import Any, Generic, Literal, TypeVar
 
 import numpy as np
 from jaxtyping import Int64, Integer
@@ -75,6 +76,10 @@ class SampledDataset(spec.Dataset[TSample], Generic[TSample]):
     def __len__(self) -> int:
         """Total number of samples in this dataset."""
         return self.subset.shape[0]
+
+    def children(self) -> Iterator[Any] | Iterable[Any]:
+        """Get all non-container child objects."""
+        return [self.dataset]
 
 
 def sample_ld(

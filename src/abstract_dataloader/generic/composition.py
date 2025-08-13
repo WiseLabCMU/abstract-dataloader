@@ -53,12 +53,6 @@ class ParallelPipelines(
         class is parameterized by a separate set of
         `Composed(Raw|Transformed|Collated|Processed)` types with this bound.
 
-    !!! tip
-
-        See [`torch.ParallelPipelines`][abstract_dataloader.] for an
-        implementation which is compatible with [`nn.Module`][torch.]-based
-        pipelines.
-
     Type Parameters:
         - `PRaw`, `PTransformed`, `PCollated`, `PProcessed`: see
           [`Pipeline`][abstract_dataloader.spec.].

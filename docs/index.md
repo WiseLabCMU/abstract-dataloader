@@ -25,7 +25,7 @@
 
     However, we do not believe that these outcomes are a foregone conclusion. In particular, we believe that it's possible to write "one true dataloader" which can scale while maintaining intercompability by **not writing a common dataloader at all** -- but rather a common specification for writing dataloaders. We call this the **"abstract dataloader"**.
 
-The **abstract dataloader** (ADL) is a minimalist [specification][abstract_dataloader.spec] for creating composable and interoperable dataloaders and data transformations, along with [abstract template implementations][abstract_dataloader.abstract] and reusable [generic components][abstract_dataloader.generic], including a [pytorch interface][abstract_dataloader.torch].
+The **abstract dataloader** (ADL) is a minimalist [specification][abstract_dataloader.spec] for creating composable and interoperable dataloaders and data transformations, along with [abstract template implementations][abstract_dataloader.abstract] and reusable [generic components][abstract_dataloader.generic].
 
 ![Abstract Dataloader Overview](./diagrams/overview.svg)
 
@@ -67,6 +67,8 @@ As an explicit goal is to minimize dependency constraints, only the following de
 
 - **`python >= 3.10`**: a somewhat recent version of python is required, since the python type annotation specifications are rapidly evolving. 
 
+- **`optree >= 3.16`**: a powerful manipulation tool for arbitrary nested structures (["pytrees"](https://github.com/metaopt/optree)).
+
 - **`numpy >= 1.14`**: any remotely recent version of numpy is compatible, with the `1.14` minimum version only being required since this version first defined the `np.integer` type.
 
 - **`jaxtyping >= 0.2.32`**: a fairly recent version of jaxtyping is also required due to the rapid pace of type annotation tooling. In particular, `jaxtyping 0.2.32` added support for `TypeVar` as array types, which is helpful for expressing [array type polymorphisms](https://github.com/patrick-kidger/jaxtyping/releases/tag/v0.2.32).
@@ -76,10 +78,6 @@ As an explicit goal is to minimize dependency constraints, only the following de
 !!! example "Minimum Python Version"
 
     We may consider upgrading our minimum python version in the future, since `3.11` and newer versions support useful typing-related features such as the [`Self` type](https://docs.python.org/3/whatsnew/3.11.html).
-
-!!! warning "Pytorch Integration"
-
-    To use the optional pytorch integrations, we also require either **`torch >= 2.2`** (first version to add `torch.utils._pytree.tree_leaves`) or **`torch` and [`optree >= 0.13`](https://github.com/metaopt/optree)** (first "mostly stable" version) in order to have access to a fully-featured tree manipulation module. The included `torch` extra will install the latest pytorch and optree, with constraints `torch >= 2.2` and `optree >= 0.13`.
 
 ## Contributing
 

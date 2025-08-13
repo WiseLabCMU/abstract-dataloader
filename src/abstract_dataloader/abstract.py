@@ -34,9 +34,9 @@ types.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from functools import cached_property
-from typing import TypeVar, cast, overload
+from typing import Any, TypeVar, cast, overload
 
 import numpy as np
 from jaxtyping import Int64, Integer
@@ -245,6 +245,10 @@ class Trace(spec.Trace[TSample]):
         return (
             f"{self.__class__.__name__}({self.name}, {len(self)}x[{sensors}])")
 
+    def children(self) -> Iterator[Any] | Iterable[Any]:
+        """Get all child objects."""
+        return self.sensors.values()
+
 
 class Dataset(spec.Dataset[TSample]):
     """A dataset, consisting of multiple traces, nominally concatenated.
@@ -328,6 +332,10 @@ class Dataset(spec.Dataset[TSample]):
             f"{self.__class__.__name__}"
             f"({len(self.traces)} traces, n={len(self)})")
 
+    def children(self) -> Iterator[Any] | Iterable[Any]:
+        """Get all child objects."""
+        return self.traces
+
 
 TRaw = TypeVar("TRaw")
 TTransformed = TypeVar("TTransformed")
@@ -369,6 +377,10 @@ class Transform(spec.Transform[TRaw, TTransformed]):
             data = tf(data)
         return cast(TTransformed, data)
 
+    def children(self) -> Iterator[Any] | Iterable[Any]:
+        """Get all non-container child objects."""
+        return self.transforms
+
 
 class Collate(spec.Collate[TTransformed, TCollated]):
     """Data collation.
@@ -400,9 +412,7 @@ class Pipeline(
           post-composed with one or more [`Transform`][^.]s; this is
           implemented by [`generic.ComposedPipeline`][abstract_dataloader.].
         - `Pipeline`s can always be composed in parallel; this is implemented
-          by [`generic.ParallelPipelines`][abstract_dataloader.], with a
-          pytorch [`nn.Module`][torch.]-compatible version in
-          [`torch.ParallelPipelines`][abstract_dataloader.].
+          by [`generic.ParallelPipelines`][abstract_dataloader.].
 
     Type Parameters:
         - `TRaw`: Input data format.
@@ -424,12 +434,16 @@ class Pipeline(
         collate: spec.Collate[TTransformed, TCollated] | None = None,
         batch: spec.Transform[TCollated, TProcessed] | None = None
     ) -> None:
+        self._children = []
         if sample is not None:
             self.sample = sample
+            self._children.append(sample)
         if collate is not None:
             self.collate = collate
+            self._children.append(collate)
         if batch is not None:
             self.batch = batch
+            self._children.append(batch)
 
     def sample(self, data: TRaw) -> TTransformed:
         """Transform single samples.
@@ -497,3 +511,7 @@ class Pipeline(
             The `TProcessed` output, ready for the downstream model.
         """
         return cast(TProcessed, data)
+
+    def children(self) -> Iterator[Any] | Iterable[Any]:
+        """Get all non-container child objects."""
+        return self._children

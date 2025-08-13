@@ -29,5 +29,7 @@ The current extension modules are:
     programming model for multi-objective learning.
 - [`sample`][.]: Dataset sampling utilities, including a low-discrepancy
     subset sampler.
+- [`torch`][.]: Pytorch-specific utilities, including a collate function
+    and a `Pipeline` wrapper for `torch.nn.Module` objects.
 - [`types`][.]: Type-related utilities which are not part of the core ADL spec.
 """

@@ -9,7 +9,7 @@
         of inputs and produces a set of outputs.
 """
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -170,3 +170,8 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
                 return {k: data[v] for k, v in self.outputs.items()}
         else:
             return data
+
+    def children(self) -> Iterable[Any]:
+        """Get all non-container child objects."""
+        for node in self.nodes.values():
+            yield node.transform

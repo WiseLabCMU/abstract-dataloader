@@ -339,9 +339,7 @@ class Pipeline(
           post-composed with one or more [`Transform`][^.]s; this is
           implemented by [`generic.ComposedPipeline`][abstract_dataloader.].
         - `Pipeline`s can always be composed in parallel; this is implemented
-          by [`generic.ParallelPipelines`][abstract_dataloader.], with a
-          pytorch [`nn.Module`][torch.]-compatible version in
-          [`torch.ParallelPipelines`][abstract_dataloader.].
+          by [`generic.ParallelPipelines`][abstract_dataloader.].
 
     Type Parameters:
         - `TRaw`: Input data format.

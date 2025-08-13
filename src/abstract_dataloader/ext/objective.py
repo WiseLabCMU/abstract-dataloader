@@ -10,7 +10,7 @@
 """
 
 from abc import abstractmethod
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 
@@ -304,3 +304,8 @@ class MultiObjective(Objective[TArray, YTrue, YPred]):
             for name, image in k_rendered.items():
                 rendered[f"{k}/{name}"] = image
         return rendered
+
+    def children(self) -> Iterator[Any] | Iterable[Any]:
+        """Get all non-container child objects."""
+        for v in self.objectives.values():
+            yield v.objective
