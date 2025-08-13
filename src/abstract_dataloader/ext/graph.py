@@ -9,8 +9,9 @@
         of inputs and produces a set of outputs.
 """
 
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
 import wadler_lindig as wl
 
@@ -39,7 +40,8 @@ class Node:
         output: output data key (or output data keys for a node which returns
             multiple outputs).
         inputs: mapping of data keys to input argument names.
-        optional: mapping of optional data keys to input argument names.
+        optional: mapping of optional data keys to input argument names (i.e.,
+            they are only passed if present).
     """
 
     transform: Callable
@@ -67,16 +69,16 @@ class Node:
         if isinstance(self.output, str):
             data[self.output] = output
         else:  # Sequence[str]
-            if len(self.output) != len(output):
-                raise ValueError(
-                    f"Node '{name}' output length mismatch: expected "
-                    f"{len(self.output)} outputs ({self.output}), but got "
-                    f"{len(output)} outputs:\n{wl.pformat(output)}\n")
             if not isinstance(output, Sequence):
                 raise TypeError(
                     f"Node '{name}' output is expected to be a sequence due "
                     f"to output specification {self.output}: "
                     f"\n{wl.pformat(output)}\n")
+            if len(self.output) != len(output):
+                raise ValueError(
+                    f"Node '{name}' output length mismatch: expected "
+                    f"{len(self.output)} outputs ({self.output}), but got "
+                    f"{len(output)} outputs:\n{wl.pformat(output)}\n")
 
             for o, v in zip(self.output, output):
                 data[o] = v
@@ -96,8 +98,8 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
     Args:
         outputs: output data keys to produce as a mapping of output keys to
             graph data keys. If `None`, all values are returned.
-        keep_all: keep references to all intermediate values instead of
-            decref-ing values which are no longer needed.
+        keep_all: keep references to all intermediate values and return them
+            instead of decref-ing values which are no longer needed.
         nodes: nodes in the graph, as keyword arguments where the key indicates
             a reference name for the node; any `dict` arguments are passed as
             key/value arguments to [`Node`][^.].
@@ -131,7 +133,7 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
         if self.keep_all or self.outputs is None:
             return data
         else:
-            keep = set(self.outputs)
+            keep = set(self.outputs.values())
             for node in self.nodes.values():
                 keep |= set(node.inputs.values())
             return {k: v for k, v in data.items() if k in keep}
@@ -160,6 +162,11 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
                 raise self._err_disconnected(data, incomplete)
 
         if self.outputs is not None:
-            return {k: data[v] for k, v in self.outputs.items()}
+            if self.keep_all:
+                for k, v in self.outputs.items():
+                    data[k] = data[v]
+                return data
+            else:
+                return {k: data[v] for k, v in self.outputs.items()}
         else:
             return data
