@@ -78,8 +78,9 @@ class ADLDataModule(
             visualizations (or a list of indices to use). Note that these
             samples are always held in memory! Set `samples=0` to disable.
         num_workers: number of worker processes during data loading and
-            CPU-side processing.
-        prefetch_factor: number of batches to fetch per worker.
+            CPU-side processing; use `num_workers=0` to run in the main thread.
+        prefetch_factor: number of batches to fetch per worker. Must be `None`
+            when `num_workers=0`.
         subsample: Sample only a (low-discrepancy) subset of samples on each
             split specified here instead of using all samples.
 
@@ -94,7 +95,7 @@ class ADLDataModule(
             str, Callable[[], spec.Dataset[Raw]] | spec.Dataset[Raw]],
         transforms: spec.Pipeline[Raw, Transformed, Collated, Processed],
         batch_size: int = 32, samples: int | Sequence[int] = 0,
-        num_workers: int = 32, prefetch_factor: int = 2,
+        num_workers: int = 32, prefetch_factor: int | None = None,
         subsample: Mapping[str, int | float | None] = {}
     ) -> None:
         super().__init__()

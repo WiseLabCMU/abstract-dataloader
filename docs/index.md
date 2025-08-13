@@ -104,13 +104,12 @@ Please report any bugs, type-related issues/inconsistencies, and feel free to su
     uv run --extra dev pytest -ra --cov --cov-report=html --cov-report=term -- tests
     ```
 
-    !!! info
+    !!! tip
 
-        We currently have 100% coverage, with a few "non-functional" items excluded:
-
-        - `__repr__` methods
-        - Protocols, `...` placeholders
-        - `NotImplementedError`s
+        You can serve a live copy of the coverage report with
+        ```sh
+        uv run python -m http.server 8001 -d htmlcov
+        ```
 
 === "Build Docs"
 
