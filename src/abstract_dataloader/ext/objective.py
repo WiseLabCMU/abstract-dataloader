@@ -180,17 +180,14 @@ class MultiObjectiveSpec(Generic[YTrue, YPred, YTrueAll, YPredAll]):
         """Index into data using the key or callable."""
         def dereference(obj, k):
             if isinstance(obj, Mapping):
-                try:
-                    return obj[k]
-                except KeyError as e:
-                    raise KeyError(
-                        f"Key {k} not found: {wl.pformat(obj)}") from e
+                if k not in obj:
+                    raise KeyError(f"Key {k} not found: {wl.pformat(obj)}")
+                return obj[k]
             else:
-                try:
-                    return getattr(obj, k)
-                except AttributeError as e:
+                if not hasattr(obj, k):
                     raise AttributeError(
-                        f"Attribute {k} not found: {wl.pformat(obj)}") from e
+                        f"Attribute {k} not found: {wl.pformat(obj)}")
+                return getattr(obj, k)
 
         if isinstance(key, str):
             return dereference(data, key)

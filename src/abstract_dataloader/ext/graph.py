@@ -109,9 +109,17 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
         self, outputs: Mapping[str, str] | None = None, keep_all: bool = False,
         **nodes: Node | dict[str, Any]
     ) -> None:
-        self.nodes = {
-            k: v if isinstance(v, Node) else Node(**v)
-            for k, v in nodes.items()}
+        self.nodes = {}
+        for k, v in nodes.items():
+            if not isinstance(v, Node):
+                try:
+                    v = Node(**v)
+                except TypeError as e:
+                    raise TypeError(
+                        f"Node '{k}' is not a valid Node specification: "
+                        f"{wl.pformat(v)}") from e
+            self.nodes[k] = v
+
         self.outputs = outputs
         self.keep_all = keep_all
 
