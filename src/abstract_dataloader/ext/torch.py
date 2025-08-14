@@ -1,6 +1,6 @@
 """Pytorch interfaces and compatibility wrappers."""
 
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any, Generic, Literal, TypeVar
 
 import numpy as np
@@ -87,9 +87,9 @@ class TransformedDataset(
 
     def __repr__(self) -> str:
         """Friendly name."""
-        return f"Transformed({repr(self.dataset)})"
+        return f"Transformed({repr(self.dataset)} -> {repr(self.transform)})"
 
-    def children(self) -> Iterator[Any] | Iterable[Any]:
+    def children(self) -> Iterable[Any]:
         """Get all non-container child objects."""
         return [self.dataset, self.transform]
 
@@ -139,13 +139,13 @@ class Pipeline(
             self.submodules = torch.nn.ModuleList(_modules)
 
     @staticmethod
-    def _find_modules(objs: Iterable | Iterator) -> list[torch.nn.Module]:
+    def _find_modules(objs: Iterable) -> list[torch.nn.Module]:
         modules = []
         for obj in objs:
             if isinstance(obj, torch.nn.Module):
                 modules.append(obj)
             elif hasattr(obj, "children") and callable(obj.children):
                 _children = obj.children()
-                if isinstance(_children, (Iterable, Iterator)):
+                if isinstance(_children, Iterable):
                     modules.extend(Pipeline._find_modules(_children))
         return modules

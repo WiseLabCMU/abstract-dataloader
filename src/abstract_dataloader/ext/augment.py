@@ -20,7 +20,7 @@ distributions:
 """
 
 import os
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from typing import Any, Generic, Protocol, TypeVar
 
 import numpy as np
@@ -76,7 +76,7 @@ class Augmentations:
         else:
             return {}
 
-    def children(self) -> Iterator[Any] | Iterable[Any]:
+    def children(self) -> Iterable[Any]:
         """Get all non-container child objects."""
         return self.augmentations.values()
 

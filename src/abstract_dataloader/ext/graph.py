@@ -9,7 +9,7 @@
         of inputs and produces a set of outputs.
 """
 
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -175,3 +175,7 @@ class Transform(spec.Transform[dict[str, Any], dict[str, Any]]):
         """Get all non-container child objects."""
         for node in self.nodes.values():
             yield node.transform
+
+    def __repr__(self) -> str:
+        """Friendly name."""
+        return f"TransformGraph({', '.join(self.nodes.keys())})"

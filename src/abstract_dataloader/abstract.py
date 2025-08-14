@@ -245,7 +245,7 @@ class Trace(spec.Trace[TSample]):
         return (
             f"{self.__class__.__name__}({self.name}, {len(self)}x[{sensors}])")
 
-    def children(self) -> Iterator[Any] | Iterable[Any]:
+    def children(self) -> Iterable[Any]:
         """Get all child objects."""
         return self.sensors.values()
 
@@ -332,7 +332,7 @@ class Dataset(spec.Dataset[TSample]):
             f"{self.__class__.__name__}"
             f"({len(self.traces)} traces, n={len(self)})")
 
-    def children(self) -> Iterator[Any] | Iterable[Any]:
+    def children(self) -> Iterable[Any]:
         """Get all child objects."""
         return self.traces
 
@@ -377,7 +377,7 @@ class Transform(spec.Transform[TRaw, TTransformed]):
             data = tf(data)
         return cast(TTransformed, data)
 
-    def children(self) -> Iterator[Any] | Iterable[Any]:
+    def children(self) -> Iterable[Any]:
         """Get all non-container child objects."""
         return self.transforms
 
@@ -512,6 +512,6 @@ class Pipeline(
         """
         return cast(TProcessed, data)
 
-    def children(self) -> Iterator[Any] | Iterable[Any]:
+    def children(self) -> Iterable[Any]:
         """Get all non-container child objects."""
         return self._children
