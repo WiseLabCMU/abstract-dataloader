@@ -98,8 +98,13 @@ def test_parallel():
 def test_sequential():
     """Test sequential composition."""
     pipeline = abstract.Pipeline(collate=lambda data: data)
-    pre = lambda data: data * 2
-    post = lambda data: [x * 5 for x in data]
+
+    def pre(data):
+        return data * 2
+
+    def post(data):
+        return [x * 5 for x in data]
+
     raw = [1, 2, 3]
 
     composed = generic.ComposedPipeline(pipeline=pipeline, pre=pre, post=post)

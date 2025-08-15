@@ -12,7 +12,7 @@
 from abc import abstractmethod
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
+from typing import Any, Generic, Protocol, cast, runtime_checkable
 
 import numpy as np
 import wadler_lindig as wl
