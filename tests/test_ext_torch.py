@@ -6,10 +6,14 @@ import numpy as np
 import torch
 from beartype.claw import beartype_package
 
-from abstract_dataloader.ext import graph, types
-from abstract_dataloader.ext.torch import Collate, Pipeline, TransformedDataset
-
 beartype_package("abstract_dataloader")
+
+from abstract_dataloader.ext import graph, types  # noqa: E402
+from abstract_dataloader.ext.torch import (  # noqa: E402
+    Collate,
+    Pipeline,
+    TransformedDataset,
+)
 
 
 def test_collate_stack():

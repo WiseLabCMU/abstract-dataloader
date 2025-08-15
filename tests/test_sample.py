@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from beartype.claw import beartype_package
 
-from abstract_dataloader.ext import sample
-
 beartype_package("abstract_dataloader")
+
+from abstract_dataloader.ext import sample  # noqa: E402
 
 
 def test_sample_ld():

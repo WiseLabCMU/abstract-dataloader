@@ -5,7 +5,7 @@ from beartype.claw import beartype_package
 
 beartype_package("abstract_dataloader")
 
-from abstract_dataloader.ext import graph
+from abstract_dataloader.ext import graph  # noqa: E402
 
 
 def test_basic():
